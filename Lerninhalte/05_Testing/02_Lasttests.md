@@ -22,7 +22,7 @@ namespace LBank.Tests.Loadtest.Cli
         static async Task Main(string[] args)
         {
             string jwt = await Login("admin", "adminpass");
-            var ledgers = await GetLedgers(jwt);
+            var ledgers = await GetAllLedgers(jwt);
             foreach (var ledger in ledgers)
             {
                 Console.WriteLine(ledger.Name);
