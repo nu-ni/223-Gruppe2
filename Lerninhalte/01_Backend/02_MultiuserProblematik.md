@@ -104,9 +104,9 @@ Wie könnte dieses Problem behoben werden?
 
 Ergänzen Sie Ledger.cs um eine Methode «public void LoadBalance()», welche mit
 dem SQL-Befehl «SELECT balance FROM ledgers WHERE id=@Id» die Balance
-aus der Datenbank liest. Schauen Sie dabei bei Ledgers.GetTotalMoney() nach,
+aus der Datenbank liest. Schauen Sie dabei bei LedgerRepository.GetTotalMoney() nach,
 wie man einen Wert aus der Datenbank ausliest.
-Ergänzen Sie Ledgers.Book(…) wie folgt.
+Ergänzen Sie LedgerRepository.Book(…) wie folgt.
     
 ```csharp
 public static void Book(decimal amount, Ledger from, Ledger to)
