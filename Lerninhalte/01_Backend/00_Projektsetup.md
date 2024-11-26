@@ -4,6 +4,8 @@ Zum start mit dem Modul 223, müssen wir unsere Geräte bereit machen für die E
 
 ### Datenbank Setup
 
+----
+#### Für Windows
 Teilaufgabe 1: Installation SQL Server Express 2022
 Installieren Sie den «SQL Server Express 2022» . Gehen Sie dabei professionell vor und informieren Sie sich zuerst über das Produkt und die Installation. Sie können dabei das Web oder auch YouTube  verwenden. Gehen Sie bei der Installation sorgfältig vor und kontrollieren Sie Ihre Einstellungen jeweils. [sql express](https://go.microsoft.com/fwlink/p/?linkid=2216019&clcid=0x409&culture=en-us&country=us)
 
@@ -11,6 +13,19 @@ Optional: Wenn Sie nicht möchten, dass der SQL-Server mit dem Start von Windows
 
 Teilaufgabe 2: Microsoft SQL Server Management Studio
 Installieren Sie das «Microsoft SQL Server Management Studio» . Gehen Sie dabei professionell vor und informieren Sie sich zuerst über das Produkt und die Installation. [ssms](https://learn.microsoft.com/de-de/sql/ssms/download-sql-server-management-studio-ssms?view=sql-server-ver16)
+
+----
+
+#### Für Mac / Linux
+Teilaufgabe 1: Installation MariaDB
+
+Installieren Sie MariaDB. Gehen Sie dabei professionell vor und informieren Sie sich zuerst über das Produkt und die Installation. Sie können dabei das Web oder auch YouTube verwenden. Gehen Sie bei der Installation sorgfältig vor und kontrollieren Sie Ihre Einstellungen jeweils. [mariadb](https://mariadb.org/download/)
+
+Teilaufgabe 2: Installation DataGrip
+
+Installieren Sie DataGrip. Gehen Sie dabei professionell vor und informieren Sie sich zuerst über das Produkt und die Installation. Sie können dabei das Web oder auch YouTube verwenden. Gehen Sie bei der Installation sorgfältig vor und kontrollieren Sie Ihre Einstellungen jeweils. [datagrip](https://www.jetbrains.com/datagrip/download/)
+
+----
 
 Teilaufgabe 3: Überprüfen der Installation
 Starten Sie das SQL Server Management Studio und loggen Sie sich ein.	 
