@@ -17,6 +17,9 @@ Installieren Sie das «Microsoft SQL Server Management Studio» . Gehen Sie dabe
 ----
 
 #### Für Mac / Linux
+
+
+
 Teilaufgabe 1: Installation MariaDB
 
 Installieren Sie MariaDB. Gehen Sie dabei professionell vor und informieren Sie sich zuerst über das Produkt und die Installation. Sie können dabei das Web oder auch YouTube verwenden. Gehen Sie bei der Installation sorgfältig vor und kontrollieren Sie Ihre Einstellungen jeweils. [mariadb](https://mariadb.org/download/)
@@ -24,6 +27,8 @@ Installieren Sie MariaDB. Gehen Sie dabei professionell vor und informieren Sie 
 Teilaufgabe 2: Installation DataGrip
 
 Installieren Sie DataGrip. Gehen Sie dabei professionell vor und informieren Sie sich zuerst über das Produkt und die Installation. Sie können dabei das Web oder auch YouTube verwenden. Gehen Sie bei der Installation sorgfältig vor und kontrollieren Sie Ihre Einstellungen jeweils. [datagrip](https://www.jetbrains.com/datagrip/download/)
+
+ℹ️ℹ️ℹ️ *Alle weiteren Schritte wurden basierend auf SQLExpress beschrieben, funktionieren aber auch für MariaDB, beachten Sie aber die unterschiedlichen Konfigurationseinstellungen.* ℹ️ℹ️ℹ️
 
 ----
 
