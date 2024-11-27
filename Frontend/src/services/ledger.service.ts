@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root',
 })
 export class LedgerService {
-  private apiUrl = 'https://localhost:44386/api/v1';
+  private apiUrl = 'http://localhost:5000/api/v1';
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 

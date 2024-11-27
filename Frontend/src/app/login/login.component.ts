@@ -23,12 +23,12 @@ export class LoginComponent {
   onSubmit() {
     const loginData = { username: this.username, password: this.password };
 
-    this.http.post('http://localhost:7972/api/v1/Login', loginData).subscribe({
+    this.http.post('http://localhost:5000/api/v1/Login', loginData).subscribe({
       next: (response: any) => {
         console.log('Login successful', response);
         // Handle success (e.g., navigate to another page)
         this.authService.setToken(response.token);
-        
+
         // Redirect to the ledgers page
         this.router.navigate(['/ledgers']);
       },
