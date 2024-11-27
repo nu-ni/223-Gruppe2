@@ -22,9 +22,9 @@ namespace L_Bank_W_Backend.Controllers
         
         [HttpGet]
         [Authorize(Roles = "Administrators,Users")]
-        public IEnumerable<Ledger> Get()
+        public async Task<IEnumerable<Ledger>> Get()
         {
-            var allLedgers = this.ledgerRepository.GetAllLedgers();
+            var allLedgers = await this.ledgerRepository.GetAllLedgers();
             return allLedgers;
         }
 
