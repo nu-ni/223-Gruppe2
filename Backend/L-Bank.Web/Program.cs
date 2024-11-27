@@ -26,15 +26,15 @@ namespace L_Bank_W_Backend
                         .AllowAnyHeader();
                 });
             });
-            
+
             builder.Services.Configure<JwtSettings>(
                 builder.Configuration.GetSection("JwtSettings")
             );
-            
+
             builder.Services.Configure<DatabaseSettings>(
                 builder.Configuration.GetSection("DatabaseSettings")
             );
-            
+
             builder.Services
                 .AddAuthentication(x =>
                 {
@@ -73,7 +73,7 @@ namespace L_Bank_W_Backend
                         Version = "v1"
                     }
                 );
-                
+
                 var securityScheme = new OpenApiSecurityScheme
                 {
                     Name = "JWT Authentication",
