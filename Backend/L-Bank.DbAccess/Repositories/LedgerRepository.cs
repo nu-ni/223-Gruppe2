@@ -1,11 +1,9 @@
-using System.Collections.Immutable;
 using System.Data;
 using System.Data.SqlClient;
 using L_Bank_W_Backend.Core.Models;
-using Microsoft.Extensions.Options;
-using L_Bank_W_Backend;
 using L_Bank_W_Backend.DbAccess.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace L_Bank_W_Backend.DbAccess.Repositories;
 
@@ -13,13 +11,13 @@ public class LedgerRepository : ILedgerRepository
 {
     private readonly DatabaseSettings databaseSettings;
     private readonly AppDbContext _context;
-    
+
     public LedgerRepository(IOptions<DatabaseSettings> databaseSettings, AppDbContext context)
     {
         this._context = context;
         this.databaseSettings = databaseSettings.Value;
     }
-    
+
     public void Book(decimal amount, Ledger from, Ledger to)
     {
         from.Balance -= amount;
@@ -29,7 +27,7 @@ public class LedgerRepository : ILedgerRepository
         to.Balance += amount;
         this.Update(to);
     }
-    
+
     public decimal GetTotalMoney()
     {
         const string query = @$"SELECT SUM(balance) AS TotalBalance FROM {Ledger.CollectionName}";
@@ -70,7 +68,7 @@ public class LedgerRepository : ILedgerRepository
             throw;
         }
     }
-    
+
     public Ledger? SelectOne(int id)
     {
         Ledger? retLedger = null;
@@ -154,6 +152,18 @@ public class LedgerRepository : ILedgerRepository
         }
     }
 
+    public async void CreateLedger(string name)
+    {
+        var newLedger = new Ledger
+        {
+            Name = name,
+            Balance = 0,
+        };
+
+        await _context.Ledgers.AddAsync(newLedger);
+        await _context.SaveChangesAsync();
+    }
+
     public void Update(Ledger ledger)
     {
         using (SqlConnection conn = new SqlConnection(this.databaseSettings.ConnectionString))
@@ -162,7 +172,7 @@ public class LedgerRepository : ILedgerRepository
             this.Update(ledger, conn, null);
         }
     }
-    
+
     public decimal? GetBalance(int ledgerId, SqlConnection conn, SqlTransaction transaction)
     {
         const string query = @"SELECT balance FROM ledgers WHERE id=@Id";

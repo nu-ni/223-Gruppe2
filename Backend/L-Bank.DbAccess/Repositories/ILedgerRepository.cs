@@ -10,6 +10,7 @@ public interface ILedgerRepository
     decimal GetTotalMoney();
     Ledger? SelectOne(int id);
     Ledger? SelectOne(int id, SqlConnection conn, SqlTransaction? transaction);
+    void CreateLedger(string name);
     void Update(Ledger ledger, SqlConnection conn, SqlTransaction transaction);
     void Update(Ledger ledger);
     decimal? GetBalance(int ledgerId, SqlConnection conn, SqlTransaction transaction);
