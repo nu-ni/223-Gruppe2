@@ -1,0 +1,30 @@
+<div class="m-4">
+    <h2>Create Transaction</h2>
+    <form (ngSubmit)="onSubmit()" class="d-flex align-items-center">
+        <!-- Dropdown for Debit Ledger -->
+        <div class="mx-3">
+            <label for="debitLedger" class="form-label">Debit:</label>
+            <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger" class="form-select" required>
+                <option *ngFor="let ledger of ledgers" [value]="ledger.id">
+                    {{ ledger.name }}
+                </option>
+            </select>
+        </div>
+
+        <!-- Arrow -->
+        <span class="mx-3 fs-2" style="line-height: 0;">→</span>
+
+        <!-- Dropdown for Credit Ledger -->
+        <div class="mx-3">
+            <label for="creditLedger" class="form-label">Credit:</label>
+            <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger" class="form-select" required>
+                <option *ngFor="let ledger of ledgers" [value]="ledger.id">
+                    {{ ledger.name }}
+                </option>
+            </select>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary ms-3">Submit</button>
+    </form>
+</div>
