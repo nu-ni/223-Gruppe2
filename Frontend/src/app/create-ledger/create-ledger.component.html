@@ -1,12 +1,11 @@
 <div>
-  <h2>Create Ledger</h2>
+  <h2 class="ms-2">Create Ledger</h2>
   <form (ngSubmit)="onSubmit()">
     <div>
-      <label for="ledgerName">Ledger Name:</label>
-      <input type="text" id="ledgerName" [(ngModel)]="ledgerName" name="ledgerName" required />
+      <label for="ledgerName" class="ms-2">Ledger Name:</label>
+      <input type="text" id="ledgerName" [(ngModel)]="ledgerName" name="ledgerName" class="ms-2" required />
     </div>
     <p style="color: red">{{ message }}</p>
-    <button type="submit">Create Ledger</button>
+    <button type="submit" class="btn btn-primary ms-2">Create Ledger</button>
   </form>
-
 </div>
