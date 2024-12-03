@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.SqlClient;
 using L_Bank_W_Backend.Core.Models;
 using L_Bank_W_Backend.DbAccess.Data;
+using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -97,7 +98,7 @@ public class LedgerRepository(
                 logger?.LogWarning(ex,
                     "Deadlock occurred while trying to delete ledger with id {Id}. Retrying {RetryCount} time.", id,
                     retries);
-                await Task.Delay(ComputeExponentialBackoff(retries), ct);
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
             }
             catch (Exception ex)
             {
@@ -121,12 +122,12 @@ public class LedgerRepository(
                     .AsNoTracking()
                     .FirstOrDefaultAsync(l => l.Id == id, ct);
             }
-            catch (DbUpdateConcurrencyException ex) when (IsDeadlock(ex))
+            catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
             {
                 logger.LogWarning(ex,
                     "Deadlock detected when trying to access ledger with ID {Id}, attempt {RetryCount}.", id,
                     retries + 1);
-                await Task.Delay(ComputeExponentialBackoff(retries), ct);
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
             }
             catch (Exception ex)
             {
@@ -134,7 +135,7 @@ public class LedgerRepository(
                     "An error occurred when trying to access ledger with ID {Id}, attempt {RetryCount}.", id,
                     retries + 1);
                 if (retries >= MaxRetries - 1) throw;
-                await Task.Delay(ComputeExponentialBackoff(retries), ct);
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
             }
         }
 
@@ -207,16 +208,5 @@ public class LedgerRepository(
         }
 
         return null;
-    }
-
-    private static int ComputeExponentialBackoff(int retries)
-    {
-        return (int)(Math.Pow(2, retries) * 100);
-    }
-
-    private static bool IsDeadlock(DbUpdateConcurrencyException ex)
-    {
-        var innerException = ex.InnerException as SqlException;
-        return innerException != null && innerException.Number == 1205;
     }
 }

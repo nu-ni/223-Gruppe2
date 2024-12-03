@@ -7,8 +7,6 @@ namespace L_Bank_W_Backend.DbAccess.Repositories
     public class BookingRepository(IOptions<DatabaseSettings> settings, AppDbContext dbContext)
         : IBookingRepository
     {
-        private DatabaseSettings _settings = settings.Value;
-
         public bool Book(int sourceLedgerId, int destinationLedgerId, decimal amount)
         {
             using var transaction = dbContext.Database.BeginTransaction();
