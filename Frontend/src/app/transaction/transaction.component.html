@@ -1,30 +1,61 @@
 <div class="m-4">
     <h2>Create Transaction</h2>
-    <form (ngSubmit)="onSubmit()" class="d-flex align-items-center">
-        <!-- Dropdown for Debit Ledger -->
-        <div class="mx-3">
-            <label for="debitLedger" class="form-label">Debit:</label>
-            <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger" class="form-select" required>
-                <option *ngFor="let ledger of ledgers" [value]="ledger.id">
-                    {{ ledger.name }}
-                </option>
-            </select>
+
+    <!-- Explanation -->
+    <p>
+        Use the dropdown menus to select the Debit and Credit ledgers for the transaction. 
+        Enter the amount to transfer. Click the arrow to swap the Debit and Credit ledgers 
+        to reverse the transaction direction. Ensure that:
+    </p>
+
+    <form (ngSubmit)="onSubmit()" class="d-flex flex-column">
+        <!-- Row for Debit, Arrow, Credit -->
+        <div class="d-flex align-items-center">
+            <!-- Dropdown for Debit Ledger -->
+            <div class="mx-3">
+                <label for="debitLedger" class="form-label">Debit:</label>
+                <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger" class="form-select" required
+                    (change)="updateDebitLedgerBalance()">
+                    <option *ngFor="let ledger of ledgers" [value]="ledger.id">
+                        {{ ledger.name }}
+                    </option>
+                </select>
+                <div *ngIf="debitLedgerBalance !== null" class="mt-2">
+                    <small>Balance: {{ debitLedgerBalance | currency }}</small>
+                </div>
+            </div>
+
+            <!-- Arrow -->
+            <span class="mx-3 fs-2" style="line-height: 0; cursor: pointer;" (click)="swapLedgers()"
+                title="Swap Debit and Credit">
+                →
+            </span>
+
+            <!-- Dropdown for Credit Ledger -->
+            <div class="mx-3">
+                <label for="creditLedger" class="form-label">Credit:</label>
+                <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger" class="form-select" required
+                    (change)="updateCreditLedgerBalance()">
+                    <option *ngFor="let ledger of ledgers" [value]="ledger.id">
+                        {{ ledger.name }}
+                    </option>
+                </select>
+                <div *ngIf="creditLedgerBalance !== null" class="mt-2">
+                    <small>Balance: {{ creditLedgerBalance | currency }}</small>
+                </div>
+            </div>
         </div>
 
-        <!-- Arrow -->
-        <span class="mx-3 fs-2" style="line-height: 0;">→</span>
-
-        <!-- Dropdown for Credit Ledger -->
-        <div class="mx-3">
-            <label for="creditLedger" class="form-label">Credit:</label>
-            <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger" class="form-select" required>
-                <option *ngFor="let ledger of ledgers" [value]="ledger.id">
-                    {{ ledger.name }}
-                </option>
-            </select>
+        <!-- Input for Amount -->
+        <div class="mt-4 mx-3">
+            <label for="amount" class="form-label">Amount:</label>
+            <input type="number" id="amount" [(ngModel)]="amount" name="amount" class="form-control"
+                placeholder="Enter transaction amount" required style="max-width: 250px;" />
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" class="btn btn-primary ms-3">Submit</button>
+        <div class="mt-4 mx-3">
+            <button type="submit" class="btn btn-primary">Submit Transaction</button>
+        </div>
     </form>
 </div>

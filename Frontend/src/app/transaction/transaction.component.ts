@@ -14,8 +14,9 @@ export class TransactionComponent implements OnInit {
   ledgers: any[] = [];
   debitLedger: string = '';
   creditLedger: string = '';
-  selectedDebitLedger: any; // The selected ledger object
-
+  debitLedgerBalance: number | null = null;
+  creditLedgerBalance: number | null = null;
+  amount: number | null = null; // Transaction amount
 
   constructor(private ledgerService: LedgerService) {}
 
@@ -34,19 +35,67 @@ export class TransactionComponent implements OnInit {
     );
   }
 
+  updateDebitLedgerBalance(): void {
+    const selectedLedger = this.ledgers.find(ledger => ledger.id === +this.debitLedger);
+    this.debitLedgerBalance = selectedLedger ? selectedLedger.balance : null;
+  }
+
+  updateCreditLedgerBalance(): void {
+    const selectedLedger = this.ledgers.find(ledger => ledger.id === +this.creditLedger);
+    this.creditLedgerBalance = selectedLedger ? selectedLedger.balance : null;
+  }
+
+  swapLedgers(): void {
+    const temp = this.debitLedger;
+    this.debitLedger = this.creditLedger;
+    this.creditLedger = temp;
+    this.updateDebitLedgerBalance();
+    this.updateCreditLedgerBalance();
+  }
+
   onSubmit() {
+    // Check if Debit Ledger is selected
+    if (!this.debitLedger) {
+      alert('Please select a Debit Ledger.');
+      return;
+    }
+  
+    // Check if Credit Ledger is selected
+    if (!this.creditLedger) {
+      alert('Please select a Credit Ledger.');
+      return;
+    }
+  
+    // Check if Debit and Credit Ledgers are the same
     if (this.debitLedger === this.creditLedger) {
       alert('Debit and Credit cannot be the same ledger!');
       return;
     }
-
+  
+    // Check if the transaction amount is provided and valid
+    if (this.amount === null || this.amount <= 0) {
+      alert('The amount must be a positive number!');
+      return;
+    }
+  
+    // Check if the transaction amount exceeds the balance of the debit ledger
+    if (this.debitLedgerBalance !== null && this.amount > this.debitLedgerBalance) {
+      alert('Insufficient funds in the debit ledger!');
+      return;
+    }
+  
+    // Check if the transaction amount exceeds 100 million
+    if (this.amount > 100_000_000) {
+      alert('The transaction amount cannot exceed 100 million!');
+      return;
+    }
+  
     console.log('Transaction submitted', {
       debit: this.debitLedger,
       credit: this.creditLedger,
+      amount: this.amount,
     });
-  }
-  updateSelectedLedger(ledgerId: number): void {
-    // Find the ledger by ID and update the selectedDebitLedger property
-    this.selectedDebitLedger = this.ledgers.find(ledger => ledger.id === ledgerId);
+  
+    alert('Transaction successfully submitted!');
   }
 }
