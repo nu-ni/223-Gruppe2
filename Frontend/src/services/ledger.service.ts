@@ -33,4 +33,12 @@ export class LedgerService {
     };
     return this.http.post(`${this.apiUrl}/ledgers/transfer`, payload);
   }
+  createLedger(name: string): Observable<any> {
+    const payload = { name };
+    return this.http.post(`${this.apiUrl}/ledgers`, payload);
+  }
+
+  deleteLedger(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/ledgers/${id}`);
+  }
 }

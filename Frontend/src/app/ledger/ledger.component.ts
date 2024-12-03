@@ -57,4 +57,15 @@ export class LedgerComponent implements OnInit {
       this.transferMessage = 'Please fill in all fields with valid data.';
     }
   }
+
+  deleteLedger(id: number) {
+    this.ledgerService.deleteLedger(id).subscribe(
+      () => {
+        this.loadLedgers();
+      },
+      (error) => {
+        console.error('Error deleting ledger', error);
+      }
+    );
+    }
 }
