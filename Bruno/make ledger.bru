@@ -1,0 +1,21 @@
+meta {
+  name: make ledger
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:5000/api/v1/ledgers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwicm9sZSI6IkFkbWluaXN0cmF0b3JzIiwibmJmIjoxNzMzMjEyNDc2LCJleHAiOjE3MzMyMTMzNzYsImlhdCI6MTczMzIxMjQ3NiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NDQzODYiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo0NDM4NiJ9.co1wGEYQGAR-q7RaMVfGkzpQT1aX9FeSGaEBqrQ7gq4
+}
+
+body:json {
+  {
+    "name": "sdfsf"
+  }
+}

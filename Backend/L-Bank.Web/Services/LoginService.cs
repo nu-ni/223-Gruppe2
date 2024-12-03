@@ -37,7 +37,7 @@ public class LoginService : ILoginService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = GenerateClaims(user),
-            Expires = DateTime.UtcNow.AddMinutes(15),
+            Expires = DateTime.UtcNow.AddHours(12),
             SigningCredentials = credentials,
             Issuer = jwtSettings.Issuer,
             Audience = jwtSettings.Audience

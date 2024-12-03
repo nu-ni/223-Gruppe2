@@ -1,0 +1,23 @@
+meta {
+  name: book monies
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:5000/api/v1/bookings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwicm9sZSI6IkFkbWluaXN0cmF0b3JzIiwibmJmIjoxNzMzMjIwMTU3LCJleHAiOjE3MzMyMjEwNTcsImlhdCI6MTczMzIyMDE1NywiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NDQzODYiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo0NDM4NiJ9.Sa-8n4UjM2PBlV7R7MXuy_x_phCjPY0GY-M7p36FfPg
+}
+
+body:json {
+  {
+    "SourceId": 1,
+    "DestinationId": 2,
+    "Amount": 50
+  }
+}
