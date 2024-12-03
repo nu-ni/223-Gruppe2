@@ -61,20 +61,7 @@ namespace L_Bank_W_Backend.Controllers
 
                 var cancellationToken = new CancellationToken();
                 var success = await ledgerRepository.DeleteLedger(id, cancellationToken);
-            try
-            {
-                if (id <= 0)
-                {
-                    return BadRequest(new { Error = "Invalid ledger ID. ID must be a positive integer." });
-                }
 
-                var cancellationToken = new CancellationToken();
-                var success = await ledgerRepository.DeleteLedger(id, cancellationToken);
-
-                if (!success)
-                {
-                    return NotFound(new { Error = $"Ledger with ID {id} was not found or could not be deleted." });
-                }
                 if (!success)
                 {
                     return NotFound(new { Error = $"Ledger with ID {id} was not found or could not be deleted." });
