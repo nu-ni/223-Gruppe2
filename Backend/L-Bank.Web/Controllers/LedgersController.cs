@@ -1,4 +1,5 @@
-﻿using L_Bank_W_Backend.Core.Models;
+using Microsoft.EntityFrameworkCore;
+using L_Bank_W_Backend.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using L_Bank_W_Backend.DbAccess.Repositories;
 using L_Bank_W_Backend.Dto;
@@ -60,7 +61,20 @@ namespace L_Bank_W_Backend.Controllers
 
                 var cancellationToken = new CancellationToken();
                 var success = await ledgerRepository.DeleteLedger(id, cancellationToken);
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { Error = "Invalid ledger ID. ID must be a positive integer." });
+                }
 
+                var cancellationToken = new CancellationToken();
+                var success = await ledgerRepository.DeleteLedger(id, cancellationToken);
+
+                if (!success)
+                {
+                    return NotFound(new { Error = $"Ledger with ID {id} was not found or could not be deleted." });
+                }
                 if (!success)
                 {
                     return NotFound(new { Error = $"Ledger with ID {id} was not found or could not be deleted." });
@@ -84,6 +98,5 @@ namespace L_Bank_W_Backend.Controllers
                 return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
             }
         }
-
     }
 }
