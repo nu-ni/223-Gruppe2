@@ -1,20 +1,24 @@
-using System.Collections.Immutable;
 using System.Data;
 using System.Data.SqlClient;
 using L_Bank_W_Backend.Core.Models;
+using L_Bank_W_Backend.DbAccess.Data;
+using L_Bank_W_Backend.DbAccess.Util;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace L_Bank_W_Backend.DbAccess.Repositories;
 
-public class LedgerRepository : ILedgerRepository
+public class LedgerRepository(
+    IOptions<DatabaseSettings> databaseSettings,
+    AppDbContext context,
+    ILogger<LedgerRepository> logger)
+    : ILedgerRepository
 {
-    private readonly DatabaseSettings databaseSettings;
+    private const int MaxRetries = 10;
 
-    public LedgerRepository(IOptions<DatabaseSettings> databaseSettings)
-    {
-        this.databaseSettings = databaseSettings.Value;
-    }
-    
+    private readonly DatabaseSettings _databaseSettings = databaseSettings.Value;
+
     public void Book(decimal amount, Ledger from, Ledger to)
     {
         from.Balance -= amount;
@@ -24,152 +28,137 @@ public class LedgerRepository : ILedgerRepository
         to.Balance += amount;
         this.Update(to);
     }
-    
+
     public decimal GetTotalMoney()
     {
         const string query = @$"SELECT SUM(balance) AS TotalBalance FROM {Ledger.CollectionName}";
         decimal totalBalance = 0;
 
-        using (SqlConnection conn = new SqlConnection(this.databaseSettings.ConnectionString))
+        using var conn = new SqlConnection(this._databaseSettings.ConnectionString);
+        conn.Open();
+        using var cmd = new SqlCommand(query, conn);
+        var result = cmd.ExecuteScalar();
+        if (result != DBNull.Value)
         {
-            conn.Open();
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                object result = cmd.ExecuteScalar();
-                if (result != DBNull.Value)
-                {
-                    totalBalance = Convert.ToDecimal(result);
-                }
-            }
+            totalBalance = Convert.ToDecimal(result);
         }
 
         return totalBalance;
     }
 
-    public IEnumerable<Ledger> GetAllLedgers()
+    public async Task<IEnumerable<Ledger>> GetAllLedgers()
     {
-        var allLedgers = new List<Ledger>();
-
-        const string query = @$"SELECT id, name, balance FROM {Ledger.CollectionName} ORDER BY name";
-        bool worked;
-        do
+        await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        try
         {
-            worked = true;
-            using (SqlConnection conn = new SqlConnection(this.databaseSettings.ConnectionString))
-            {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction(IsolationLevel.Serializable))
-                {
-                    try
-                    {
-                        using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
-                        {
-                            using (SqlDataReader reader = cmd.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    int id = reader.GetInt32(reader.GetOrdinal("id"));
-                                    string name = reader.GetString(reader.GetOrdinal("name"));
-                                    decimal balance = reader.GetDecimal(reader.GetOrdinal("balance"));
+            var allLedgers = await context.Ledgers
+                .OrderBy(ledger => ledger.Name)
+                .ToListAsync();
 
-                                    allLedgers.Add(new Ledger { Id = id, Name = name, Balance = balance });
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        //Console.WriteLine("Commit Exception Type: {0}", ex.GetType());
-                        //Console.WriteLine("  Message: {0}", ex.Message);
+            await transaction.CommitAsync();
 
-                        // Attempt to roll back the transaction.
-                        try
-                        {
-                            transaction.Rollback();
-                            if (ex.GetType() != typeof(Exception))
-                                worked = false;
-                        }
-                        catch (Exception ex2)
-                        {
-                            // Handle any errors that may have occurred on the server that would cause the rollback to fail.
-                            //Console.WriteLine("Rollback Exception Type: {0}", ex2.GetType());
-                            //Console.WriteLine("  Message: {0}", ex2.Message);
-                            if (ex2.GetType() != typeof(Exception))
-                                worked = false;
-                        }
-                    }
-                }
-            }
-        } while (!worked);
-
-        return allLedgers;
-    }
-    
-    public Ledger? SelectOne(int id)
-    {
-        Ledger? retLedger = null;
-        bool worked;
-
-        do
+            return allLedgers;
+        }
+        catch
         {
-            worked = true;
-            using (SqlConnection conn = new SqlConnection(this.databaseSettings.ConnectionString))
-            {
-                conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction(IsolationLevel.Serializable))
-                {
-                    try
-                    {
-                        retLedger = SelectOne(id, conn, transaction);
-                    }
-                    catch (Exception ex)
-                    {
-                        //Console.WriteLine("Commit Exception Type: {0}", ex.GetType());
-                        //Console.WriteLine("  Message: {0}", ex.Message);
-
-                        // Attempt to roll back the transaction.
-                        try
-                        {
-                            transaction.Rollback();
-                            if (ex.GetType() != typeof(Exception))
-                                worked = false;
-                        }
-                        catch (Exception ex2)
-                        {
-                            // Handle any errors that may have occurred on the server that would cause the rollback to fail.
-                            //Console.WriteLine("Rollback Exception Type: {0}", ex2.GetType());
-                            //Console.WriteLine("  Message: {0}", ex2.Message);
-                            if (ex2.GetType() != typeof(Exception))
-                                worked = false;
-                        }
-                    }
-                }
-            }
-        } while (!worked);
-
-        return retLedger;
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
-    public Ledger? SelectOne(int id, SqlConnection conn, SqlTransaction? transaction)
+    public async Task<bool> DeleteLedger(int id, CancellationToken ct)
     {
-        Ledger? retLedger;
-        const string query = @$"SELECT id, name, balance FROM {Ledger.CollectionName} WHERE id=@Id";
+        var retries = 0;
 
-        using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+        const IsolationLevel isolationLevel = IsolationLevel.ReadCommitted;
+
+        while (retries < MaxRetries)
         {
-            cmd.Parameters.AddWithValue("@Id", id);
-            using (SqlDataReader reader = cmd.ExecuteReader())
+            try
             {
-                if (!reader.Read())
-                    throw new Exception($"No Ledger with id {id}");
+                await using var transaction =
+                    await context.Database.BeginTransactionAsync(isolationLevel, ct);
+                var ledgerToDelete = await context.Ledgers.FindAsync([id], ct);
 
-                int ordId = reader.GetInt32(reader.GetOrdinal("id"));
-                string ordName = reader.GetString(reader.GetOrdinal("name"));
-                decimal ordBalance = reader.GetDecimal(reader.GetOrdinal("balance"));
+                if (ledgerToDelete == null)
+                {
+                    logger?.LogInformation($"Ledger with id {id} not found.");
+                    return false;
+                }
 
-                retLedger = new Ledger { Id = ordId, Name = ordName, Balance = ordBalance };
+                context.Ledgers.Remove(ledgerToDelete);
+                await context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+
+                return true;
+            }
+            catch (SqlException ex) when (ex.Number == 1205)
+            {
+                retries++;
+                logger?.LogWarning(ex,
+                    "Deadlock occurred while trying to delete ledger with id {Id}. Retrying {RetryCount} time.", id,
+                    retries);
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "An exception occurred while trying to delete ledger with id {Id}.", id);
+                throw;
             }
         }
+
+        logger?.LogCritical("Delete operation failed for ledger with id {Id} after {MaxRetries} retries.", id,
+            MaxRetries);
+        throw new Exception($"Delete operation failed after {MaxRetries} retries.");
+    }
+
+    public async Task<Ledger?> SelectOneAsync(int id, CancellationToken ct = default)
+    {
+        for (var retries = 0; retries < MaxRetries; retries++)
+        {
+            try
+            {
+                return await context.Ledgers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(l => l.Id == id, ct);
+            }
+            catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
+            {
+                logger.LogWarning(ex,
+                    "Deadlock detected when trying to access ledger with ID {Id}, attempt {RetryCount}.", id,
+                    retries + 1);
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "An error occurred when trying to access ledger with ID {Id}, attempt {RetryCount}.", id,
+                    retries + 1);
+                if (retries >= MaxRetries - 1) throw;
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
+            }
+        }
+
+        logger.LogCritical("Select operation failed to find ledger with ID {Id} after {MaxRetries} retries.", id,
+            MaxRetries);
+        throw new Exception($"Select operation failed after {MaxRetries} retries.");
+    }
+
+    public Ledger SelectOne(int id, SqlConnection conn, SqlTransaction? transaction)
+    {
+        const string query = @$"SELECT id, name, balance FROM {Ledger.CollectionName} WHERE id=@Id";
+
+        using var cmd = new SqlCommand(query, conn, transaction);
+        cmd.Parameters.AddWithValue("@Id", id);
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read())
+            throw new Exception($"No Ledger with id {id}");
+
+        var ordId = reader.GetInt32(reader.GetOrdinal("id"));
+        var ordName = reader.GetString(reader.GetOrdinal("name"));
+        var ordBalance = reader.GetDecimal(reader.GetOrdinal("balance"));
+
+        var retLedger = new Ledger { Id = ordId, Name = ordName, Balance = ordBalance };
 
         return retLedger;
     }
@@ -177,38 +166,45 @@ public class LedgerRepository : ILedgerRepository
     public void Update(Ledger ledger, SqlConnection conn, SqlTransaction? transaction)
     {
         const string query = $"UPDATE {Ledger.CollectionName} SET name=@Name, balance=@Balance WHERE id=@Id";
-        using (var cmd = new SqlCommand(query, conn, transaction))
-        {
-            cmd.Parameters.AddWithValue("@Name", ledger.Name);
-            cmd.Parameters.AddWithValue("@Balance", ledger.Balance);
-            cmd.Parameters.AddWithValue("@Id", ledger.Id);
+        using var cmd = new SqlCommand(query, conn, transaction);
+        cmd.Parameters.AddWithValue("@Name", ledger.Name);
+        cmd.Parameters.AddWithValue("@Balance", ledger.Balance);
+        cmd.Parameters.AddWithValue("@Id", ledger.Id);
 
-            // Execute the command
-            cmd.ExecuteNonQuery();
-        }
+        // Execute the command
+        cmd.ExecuteNonQuery();
+    }
+
+    public async Task<int> CreateLedger(string name)
+    {
+        var newLedger = new Ledger
+        {
+            Name = name,
+            Balance = 0,
+        };
+
+        var ledger = await context.Ledgers.AddAsync(newLedger);
+        await context.SaveChangesAsync();
+        return ledger.Entity.Id;
     }
 
     public void Update(Ledger ledger)
     {
-        using (SqlConnection conn = new SqlConnection(this.databaseSettings.ConnectionString))
-        {
-            conn.Open();
-            this.Update(ledger, conn, null);
-        }
+        using var conn = new SqlConnection(_databaseSettings.ConnectionString);
+        conn.Open();
+        Update(ledger, conn, null);
     }
-    
+
     public decimal? GetBalance(int ledgerId, SqlConnection conn, SqlTransaction transaction)
     {
         const string query = @"SELECT balance FROM ledgers WHERE id=@Id";
 
-        using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+        using var cmd = new SqlCommand(query, conn, transaction);
+        cmd.Parameters.AddWithValue("@Id", ledgerId);
+        var result = cmd.ExecuteScalar();
+        if (result != DBNull.Value)
         {
-            cmd.Parameters.AddWithValue("@Id", ledgerId);
-            object result = cmd.ExecuteScalar();
-            if (result != DBNull.Value)
-            {
-                return Convert.ToDecimal(result);
-            }
+            return Convert.ToDecimal(result);
         }
 
         return null;

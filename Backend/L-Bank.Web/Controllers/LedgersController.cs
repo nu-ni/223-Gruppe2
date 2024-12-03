@@ -1,46 +1,61 @@
-﻿using System.Security.Claims;
-using L_Bank_W_Backend.Core.Models;
-using L_Bank_W_Backend.DbAccess;
+﻿using L_Bank_W_Backend.Core.Models;
 using L_Bank_W_Backend.DbAccess.Repositories;
-using L_Bank_W_Backend.Models;
+using L_Bank_W_Backend.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace L_Bank_W_Backend.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    public class LedgersController : ControllerBase
+    public class LedgersController(ILedgerRepository ledgerRepository) : ControllerBase
     {
-        private readonly ILedgerRepository ledgerRepository;
-
-        public LedgersController(ILedgerRepository ledgerRepository)
-        {
-            this.ledgerRepository = ledgerRepository;
-        }
-        
         [HttpGet]
         [Authorize(Roles = "Administrators,Users")]
-        public IEnumerable<Ledger> Get()
+        public async Task<IEnumerable<Ledger>> Get()
         {
-            var allLedgers = this.ledgerRepository.GetAllLedgers();
+            var allLedgers = await ledgerRepository.GetAllLedgers();
             return allLedgers;
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         [Authorize(Roles = "Administrators,Users")]
-        public Ledger? Get(int id)
+        public async Task<Ledger?> Get(int id)
         {
-            var ledger = this.ledgerRepository.SelectOne(id);
+            var ledger = await ledgerRepository.SelectOneAsync(id, new CancellationToken());
             return ledger;
         }
 
-        [HttpPut("{id}")]
+        [HttpPost]
+        [Authorize(Roles = "Administrators")]
+        public async Task<IActionResult> Post([FromBody] CreateLedgerDto ledger)
+        {
+            if (string.IsNullOrEmpty(ledger.Name))
+            {
+                return BadRequest("Ledger name is required");
+            }
+
+            var id = await ledgerRepository.CreateLedger(ledger.Name);
+            return Ok(id);
+        }
+
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Administrators")]
         public void Put(int id, [FromBody] Ledger ledger)
         {
-            this.ledgerRepository.Update(ledger);
+            ledgerRepository.Update(ledger);
+        }
+
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Administrators")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            // TODO: Error handling
+            var success = await ledgerRepository.DeleteLedger(id, new CancellationToken());
+
+            if (!success) return NotFound();
+
+            return Ok(new { Message = $"Ledger with ID {id} deleted successfully." });
         }
     }
 }

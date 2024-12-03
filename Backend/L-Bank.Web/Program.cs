@@ -1,9 +1,11 @@
 using System.Text;
 using L_Bank_W_Backend.DbAccess;
+using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Repositories;
 using L_Bank_W_Backend.Models;
 using L_Bank_W_Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -24,15 +26,15 @@ namespace L_Bank_W_Backend
                         .AllowAnyHeader();
                 });
             });
-            
+
             builder.Services.Configure<JwtSettings>(
                 builder.Configuration.GetSection("JwtSettings")
             );
-            
+
             builder.Services.Configure<DatabaseSettings>(
                 builder.Configuration.GetSection("DatabaseSettings")
             );
-            
+
             builder.Services
                 .AddAuthentication(x =>
                 {
@@ -58,7 +60,7 @@ namespace L_Bank_W_Backend
             builder.Services.AddTransient<IUserRepository, UserRepository>();
             builder.Services.AddTransient<ILoginService, LoginService>();
             builder.Services.AddTransient<IBookingRepository, BookingRepository>();
-            
+
             builder.Services.AddControllers();
 
             builder.Services.AddEndpointsApiExplorer();
@@ -71,7 +73,7 @@ namespace L_Bank_W_Backend
                         Version = "v1"
                     }
                 );
-                
+
                 var securityScheme = new OpenApiSecurityScheme
                 {
                     Name = "JWT Authentication",
@@ -95,13 +97,24 @@ namespace L_Bank_W_Backend
                                 Id = "Bearer"
                             }
                         },
-                        new string[] {}
+                        new string[] { }
                     }
                 };
 
                 c.AddSecurityRequirement(securityRequirement);
             });
-            
+
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlServer(
+                    builder.Configuration.GetSection("DatabaseSettings:ConnectionString").Value,
+                    sqlOptions => sqlOptions.MigrationsAssembly("L-Bank.Web")
+                )
+            );
+
+            builder.Services.AddLogging(configure => configure.AddConsole())
+                .AddTransient<LedgerRepository>();
+
             var app = builder.Build();
             app.UseCors("AllowAll");
 
@@ -139,7 +152,7 @@ namespace L_Bank_W_Backend
                 try
                 {
                     // Example: Run a startup task
-                    var databaseSeeder = services.GetRequiredService<IDatabaseSeeder>();     
+                    var databaseSeeder = services.GetRequiredService<IDatabaseSeeder>();
                     Console.WriteLine("Initializing database.");
                     databaseSeeder.Initialize();
                     Console.WriteLine("Seeding data.");
@@ -151,7 +164,7 @@ namespace L_Bank_W_Backend
                     Console.WriteLine($"Error during startup: {ex.Message}");
                 }
             }
-            
+
             app.Run();
         }
     }
