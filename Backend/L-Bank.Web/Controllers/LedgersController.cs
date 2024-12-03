@@ -1,4 +1,5 @@
 ﻿using L_Bank_W_Backend.Core.Models;
+using Microsoft.EntityFrameworkCore;
 using L_Bank_W_Backend.DbAccess.Repositories;
 using L_Bank_W_Backend.Dto;
 using Microsoft.AspNetCore.Authorization;
@@ -50,12 +51,39 @@ namespace L_Bank_W_Backend.Controllers
         [Authorize(Roles = "Administrators")]
         public async Task<IActionResult> Delete(int id)
         {
-            // TODO: Error handling
-            var success = await ledgerRepository.DeleteLedger(id, new CancellationToken());
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { Error = "Invalid ledger ID. ID must be a positive integer." });
+                }
 
-            if (!success) return NotFound();
+                var cancellationToken = new CancellationToken();
+                var success = await ledgerRepository.DeleteLedger(id, cancellationToken);
 
-            return Ok(new { Message = $"Ledger with ID {id} deleted successfully." });
+                if (!success)
+                {
+                    return NotFound(new { Error = $"Ledger with ID {id} was not found or could not be deleted." });
+                }
+
+                return Ok(new { Message = $"Ledger with ID {id} deleted successfully." });
+            }
+            catch (DbUpdateException ex)
+            {
+                // Handles database-specific exceptions, such as foreign key constraint violations
+                return StatusCode(500, new { Error = "An error occurred while interacting with the database.", Details = ex.Message });
+            }
+            catch (OperationCanceledException)
+            {
+                // Handles cases where the operation is canceled
+                return StatusCode(500, new { Error = "The operation was canceled." });
+            }
+            catch (Exception ex)
+            {
+                // Handles all other unexpected exceptions
+                return StatusCode(500, new { Error = "An unexpected error occurred.", Details = ex.Message });
+            }
         }
+
     }
 }
