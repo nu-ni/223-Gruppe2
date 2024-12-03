@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "L-Bank.Cli", "L-Bank.Cli\L-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "L-Bank.Test", "L-Bank.Test\L-Bank.Test.csproj", "{0B8992B8-CCC6-4CA1-86BD-4EC166B4FC7F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "L-Bank.Test.Concurrent", "L-Bank.Test.Concurrent\L-Bank.Test.Concurrent.csproj", "{45BC34C5-6FC2-4233-A82F-290955D90A18}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{0B8992B8-CCC6-4CA1-86BD-4EC166B4FC7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B8992B8-CCC6-4CA1-86BD-4EC166B4FC7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0B8992B8-CCC6-4CA1-86BD-4EC166B4FC7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45BC34C5-6FC2-4233-A82F-290955D90A18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45BC34C5-6FC2-4233-A82F-290955D90A18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45BC34C5-6FC2-4233-A82F-290955D90A18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45BC34C5-6FC2-4233-A82F-290955D90A18}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
