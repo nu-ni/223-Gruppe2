@@ -4,6 +4,7 @@ using L_Bank_W_Backend.Core.Models;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -46,22 +47,24 @@ public class LedgerRepository(
         return totalBalance;
     }
 
-    public async Task<IEnumerable<Ledger>> GetAllLedgers()
+    public async Task<IEnumerable<Ledger>> GetAllLedgers(CancellationToken ct)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        await using var transaction =
+            await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken: ct);
         try
         {
             var allLedgers = await context.Ledgers
+                .AsNoTracking()
                 .OrderBy(ledger => ledger.Name)
-                .ToListAsync();
+                .ToListAsync(cancellationToken: ct);
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(ct);
 
             return allLedgers;
         }
         catch
         {
-            await transaction.RollbackAsync();
+            await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
             throw;
         }
     }
@@ -69,14 +72,14 @@ public class LedgerRepository(
     public async Task<bool> DeleteLedger(int id, CancellationToken ct)
     {
         var retries = 0;
-
+        IDbContextTransaction? transaction = null;
         const IsolationLevel isolationLevel = IsolationLevel.ReadCommitted;
 
         while (retries < MaxRetries)
         {
             try
             {
-                await using var transaction =
+                transaction =
                     await context.Database.BeginTransactionAsync(isolationLevel, ct);
                 var ledgerToDelete = await context.Ledgers.FindAsync([id], ct);
 
@@ -98,11 +101,13 @@ public class LedgerRepository(
                 logger?.LogWarning(ex,
                     "Deadlock occurred while trying to delete ledger with id {Id}. Retrying {RetryCount} time.", id,
                     retries);
+                await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
                 await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
             }
             catch (Exception ex)
             {
                 logger?.LogError(ex, "An exception occurred while trying to delete ledger with id {Id}.", id);
+                await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
                 throw;
             }
         }

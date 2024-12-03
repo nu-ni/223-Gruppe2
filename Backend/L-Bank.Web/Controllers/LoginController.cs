@@ -1,14 +1,8 @@
-﻿using L_Bank_W_Backend.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using L_Bank_W_Backend.Core.Models;
+﻿using L_Bank_W_Backend.Core.Models;
 using L_Bank_W_Backend.Dto;
 using L_Bank_W_Backend.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace L_Bank_W_Backend.Controllers
 {
@@ -22,8 +16,8 @@ namespace L_Bank_W_Backend.Controllers
 
         public LoginController(IUserRepository userRepository, ILoginService loginService)
         {
-            this.userRepository = userRepository ?? throw new System.ArgumentNullException(nameof(userRepository));
-            this.loginService = loginService ?? throw new System.ArgumentNullException(nameof(loginService));
+            this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            this.loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
         }
         
         [HttpPost]

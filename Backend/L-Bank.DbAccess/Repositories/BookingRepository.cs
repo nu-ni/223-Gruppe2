@@ -1,42 +1,80 @@
 ﻿using L_Bank_W_Backend.DbAccess.Data;
-using L_Bank_W_Backend.Models;
-using Microsoft.Extensions.Options;
+using L_Bank_W_Backend.DbAccess.Util;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
-namespace L_Bank_W_Backend.DbAccess.Repositories
+namespace L_Bank_W_Backend.DbAccess.Repositories;
+
+public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository> logger)
+    : IBookingRepository
 {
-    public class BookingRepository(IOptions<DatabaseSettings> settings, AppDbContext dbContext)
-        : IBookingRepository
+    private const int MaxRetries = 10;
+
+    public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
-        public bool Book(int sourceLedgerId, int destinationLedgerId, decimal amount)
+        logger.LogInformation(
+            "Starting book operation with source '{sourceLedgerId}' and destination '{destinationLedgerId}'."
+            , sourceLedgerId, destinationLedgerId);
+
+        for (var retries = 0;
+             retries < MaxRetries;
+             retries++)
         {
-            using var transaction = dbContext.Database.BeginTransaction();
+            IDbContextTransaction? transaction = null;
             try
             {
-                var sourceLedger = dbContext.Ledgers.Find(sourceLedgerId);
-                var destinationLedger = dbContext.Ledgers.Find(destinationLedgerId);
+                transaction = await dbContext.Database.BeginTransactionAsync(ct);
 
-                if (sourceLedger == null || destinationLedger == null || sourceLedger.Balance < amount)
+                var sourceLedger = await dbContext.Ledgers.FindAsync([sourceLedgerId], ct);
+                var destinationLedger = await dbContext.Ledgers.FindAsync([destinationLedgerId], ct);
+
+                if (sourceLedger == null || destinationLedger == null)
                 {
-                    transaction.Rollback();
+                    logger.LogWarning(
+                        "Book operation failed with source '{sourceLedgerId}' and destination '{destinationLedgerId}', ledger not found.",
+                        sourceLedgerId, destinationLedgerId);
+                    await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
+                    return false;
+                }
+
+                if (sourceLedger.Balance < amount)
+                {
+                    logger.LogWarning(
+                        "Book operation failed with source '{sourceLedgerId}' and destination '{destinationLedgerId}', insufficient balance.",
+                        sourceLedgerId, destinationLedgerId);
+                    await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
                     return false;
                 }
 
                 sourceLedger.Balance -= amount;
-
                 destinationLedger.Balance += amount;
 
-                dbContext.SaveChanges();
+                await dbContext.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return true;
+            }
+            catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
+            {
+                logger.LogWarning(ex, "Retry '{RetryCount}' of '{MaxRetries}' due to deadlock.", retries + 1,
+                    MaxRetries);
 
-                transaction.Commit();
+                // On deadlock, we perform the retry after a delay based on the retry count.
+                await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                transaction.Rollback();
-                return false;
-            }
+                logger.LogError(ex, "An exception occurred on retry '{RetryCount}' of '{MaxRetries}'.", retries + 1,
+                    MaxRetries);
 
-            return true;
+                await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
+
+                if (retries >= MaxRetries - 1) throw;
+                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
+            }
         }
+
+        return false;
     }
 }
