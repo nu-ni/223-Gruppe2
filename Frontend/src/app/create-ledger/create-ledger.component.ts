@@ -9,7 +9,6 @@ import {Router} from '@angular/router';
 @Component({
   selector: 'app-create-ledger',
   templateUrl: './create-ledger.component.html',
-  styleUrls: ['./create-ledger.component.css'],
   imports: [CommonModule, FormsModule],
   standalone: true,
   providers:  [ LedgerService, HttpClient ]
@@ -21,6 +20,17 @@ export class CreateLedgerComponent {
 
   onSubmit(): void {
     if (this.ledgerName.trim()) {
+      this.ledgerService.createLedger(this.ledgerName).subscribe({
+        next: (response: any) => {
+          console.log('Ledger created', response);
+          // Handle success (e.g., navigate to another page)
+          this.router.navigate(['/ledgers']);
+        },
+        error: (err) => {
+          console.error('Ledger creation failed', err);
+          this.message = 'Ledger creation failed';
+        },
+      });
       console.log('Creating ledger', this.ledgerName);
       /*this.router.navigate(['/ledgers']);*/
     } else {
