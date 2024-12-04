@@ -1,64 +1,70 @@
-﻿using NBomber.Contracts;
-using NBomber.Contracts.Stats;
-using NBomber.CSharp;
-using NBomber.Http.CSharp;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
-Console.WriteLine("Calling LBank Info API...");
-
-try
+namespace LBank.Tests.Loadtest.Cli
 {
-    using var httpClient = new HttpClient();
-    var response = await CallLBankInfoApi(httpClient);
-    Console.WriteLine("API Response:");
-    Console.WriteLine(response);
-    
-    Console.WriteLine("Starting NBomber load test...");
-    var scenario = CreateScenario(httpClient);
-    NBomberRunner
-        .RegisterScenarios(scenario)
-        .WithReportFileName("reports")
-        .WithReportFolder("reports")
-        .WithReportFormats(ReportFormat.Html)
-        .Run();
+    class Program
+    {
+        private static readonly HttpClient httpClient = new HttpClient();
 
-}
-catch (Exception ex)
-{
-    Console.WriteLine("An error occurred while calling the API:");
-    Console.WriteLine(ex.Message);
-}
-
-Console.WriteLine("Press any key to exit");
-Console.ReadKey();
-return;
-
-static async Task<string> CallLBankInfoApi(HttpClient httpClient)
-{
-    httpClient.BaseAddress = new Uri("http://localhost:5000");
-    httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-
-    var response = await httpClient.GetAsync("/api/v1/lbankinfo");
-    response.EnsureSuccessStatusCode();
-
-    return await response.Content.ReadAsStringAsync();
-}
-
-static ScenarioProps CreateScenario(HttpClient httpClient)
-{
-    return Scenario.Create("http_scenario", async _ =>
+        static async Task Main(string[] args)
         {
-            var request =
-                Http.CreateRequest("GET", "http://localhost:5000/api/v1/lbankinfo")
-                    .WithHeader("Accept", "application/json");
-            
-            var response = await Http.Send(httpClient, request);
+            string jwt = await Login("admin", "adminpass");
+            Console.WriteLine($"JWT: {jwt}");
 
-            return response;
-        })
-        .WithoutWarmUp()
-        .WithLoadSimulations(
-            Simulation.Inject(rate: 100, 
-                interval: TimeSpan.FromSeconds(1),
-                during: TimeSpan.FromSeconds(30))
-        );
+            var ledgers = await GetAllLedgers(jwt);
+            if (ledgers == null || ledgers.Count == 0)
+            {
+                Console.WriteLine("No ledgers found.");
+            }
+            else
+            {
+                foreach (var ledger in ledgers)
+                {
+                    Console.WriteLine(ledger.name);
+                }
+            }
+
+            Console.WriteLine("Press any key to exit");
+            Console.ReadKey();
+        }
+
+        static async Task<string> Login(string username, string password)
+        {
+            var loginData = new { Username = username, Password = password };
+            var content = new StringContent(JsonSerializer.Serialize(loginData), Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync("http://localhost:5000/api/v1/login", content);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var jsonDocument = JsonDocument.Parse(responseContent);
+            return jsonDocument.RootElement.GetProperty("token").GetString();
+        }
+
+        static async Task<List<Ledger>> GetAllLedgers(string jwt)
+        {
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+
+            var response = await httpClient.GetAsync("http://localhost:5000/api/v1/ledgers");
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Response Content: {responseContent}");
+
+            return JsonSerializer.Deserialize<List<Ledger>>(responseContent);
+        }
+    }
+
+    public class Ledger
+    {
+        public int id { get; set; }
+        public string name { get; set; }
+        public decimal balance { get; set; }
+    }
 }
