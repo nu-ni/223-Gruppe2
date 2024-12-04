@@ -1,15 +1,22 @@
 ﻿using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Util;
+using L_Bank.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace L_Bank_W_Backend.DbAccess.Repositories;
 
-public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository> logger)
-    : IBookingRepository
+public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository> logger) : IBookingRepository
 {
     private const int MaxRetries = 20;
+
+    public async Task<IEnumerable<Booking>> GetBookingHistory(CancellationToken ct)
+    {
+        return await dbContext.Bookings // Assuming `Bookings` is the DbSet for Booking entities
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
 
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
@@ -20,8 +27,8 @@ public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository
             {
                 transaction = await dbContext.Database.BeginTransactionAsync(ct);
 
-                var sourceLedger = await dbContext.Ledgers.FindAsync([sourceLedgerId], ct);
-                var destinationLedger = await dbContext.Ledgers.FindAsync([destinationLedgerId], ct);
+                var sourceLedger = await dbContext.Ledgers.FindAsync(new object[] { sourceLedgerId }, ct);
+                var destinationLedger = await dbContext.Ledgers.FindAsync(new object[] { destinationLedgerId }, ct);
 
                 if (sourceLedger == null || destinationLedger == null)
                 {
@@ -43,6 +50,16 @@ public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository
 
                 sourceLedger.Balance -= amount;
                 destinationLedger.Balance += amount;
+
+                // Create and save the booking transaction
+                var booking = new Booking
+                {
+                    SourceId = sourceLedgerId,
+                    DestinationId = destinationLedgerId,
+                    Amount = amount,
+                };
+
+                await dbContext.Bookings.AddAsync(booking, ct);
 
                 await dbContext.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
@@ -70,5 +87,29 @@ public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository
         }
 
         return false;
+    }
+
+    public async Task<List<object>> GetTransactionHistory(CancellationToken ct)
+    {
+        var transactions = await dbContext.Bookings
+            .AsNoTracking()
+            .Select(b => new
+            {
+                b.Id,
+                b.SourceId,
+                b.DestinationId,
+                SourceLedgerName = dbContext.Ledgers
+                    .Where(l => l.Id == b.SourceId)
+                    .Select(l => l.Name)
+                    .FirstOrDefault(),
+                DestinationLedgerName = dbContext.Ledgers
+                    .Where(l => l.Id == b.DestinationId)
+                    .Select(l => l.Name)
+                    .FirstOrDefault(),
+                b.Amount,
+            })
+            .ToListAsync(ct);
+
+        return transactions.Cast<object>().ToList(); // Return as a list of objects
     }
 }

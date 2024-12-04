@@ -34,4 +34,19 @@ public class BookingsController(IBookingRepository bookingRepository) : Controll
             return Problem(detail: ex.Message, title: "An error occurred while processing the booking transaction.");
         }
     }
+
+    [HttpGet("history")]
+    [Authorize(Roles = "Administrators")]
+    public async Task<IActionResult> GetHistory()
+    {
+        try
+        {
+            var history = await bookingRepository.GetBookingHistory(new CancellationToken());
+            return Ok(history);
+        }
+        catch (Exception ex)
+        {
+            return Problem(detail: ex.Message, title: "An error occurred while fetching booking history.");
+        }
+    }
 }

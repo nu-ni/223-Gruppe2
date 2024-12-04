@@ -10,12 +10,18 @@ export class BookingService {
 
   constructor(private http: HttpClient) {}
 
+  // Method for booking transactions
   book(SourceId: string, DestinationId: string, Amount: number): Observable<any> {
     const bookingData = {
-      SourceId: parseInt(SourceId, 10), // Convert to int for backend compatibility
-      DestinationId: parseInt(DestinationId, 10), // Convert to int
+      SourceId: parseInt(SourceId, 10),
+      DestinationId: parseInt(DestinationId, 10), 
       Amount,
     };
     return this.http.post(this.apiUrl, bookingData);
+  }
+
+  getBookingHistory(): Observable<any[]> {
+    const historyUrl = `${this.apiUrl}/history`;
+    return this.http.get<any[]>(historyUrl);
   }
 }

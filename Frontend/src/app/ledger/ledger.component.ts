@@ -3,15 +3,15 @@ import { LedgerService } from '../../services/ledger.service';
 import { Ledger } from '../../models/ledger.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { TransactionComponent } from '../transaction/transaction.component';
+import { HistoryComponent } from '../history/history.component';
 
 @Component({
   selector: 'app-ledger',
   templateUrl: './ledger.component.html',
   styleUrls: ['./ledger.component.css'],
-  imports: [CommonModule, FormsModule, TransactionComponent],
+  imports: [CommonModule, FormsModule, TransactionComponent, HistoryComponent],
   standalone: true,
   providers:  [ LedgerService, HttpClient ]
 })
