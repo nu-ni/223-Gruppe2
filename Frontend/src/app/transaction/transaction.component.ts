@@ -17,11 +17,11 @@ export class TransactionComponent implements OnInit {
   creditLedger: string = '';
   debitLedgerBalance: number | null = null;
   creditLedgerBalance: number | null = null;
-  amount: number | null = null; // Transaction amount
+  amount: number | null = null;
 
   constructor(
     private ledgerService: LedgerService,
-    private bookingService: BookingService // Inject the service
+    private bookingService: BookingService
   ) {}
 
   ngOnInit(): void {
@@ -31,7 +31,7 @@ export class TransactionComponent implements OnInit {
   fetchLedgers() {
     this.ledgerService.getLedgers().subscribe(
       (data) => {
-        this.ledgers = data; // Assign fetched ledgers to the dropdown
+        this.ledgers = data;
       },
       (error) => {
         console.error('Failed to fetch ledgers', error);
