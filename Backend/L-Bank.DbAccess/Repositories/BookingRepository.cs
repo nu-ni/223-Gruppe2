@@ -1,4 +1,5 @@
-﻿using L_Bank_W_Backend.DbAccess.Data;
+﻿using System.Data;
+using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -10,15 +11,17 @@ public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository
     : IBookingRepository
 {
     private const int MaxRetries = 20;
+    private const IsolationLevel IsolationLevel = System.Data.IsolationLevel.Serializable;
 
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
+
         for (var retries = 0; retries < MaxRetries; retries++)
         {
             IDbContextTransaction? transaction = null;
             try
             {
-                transaction = await dbContext.Database.BeginTransactionAsync(ct);
+                transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel, ct);
 
                 var sourceLedger = await dbContext.Ledgers.FindAsync([sourceLedgerId], ct);
                 var destinationLedger = await dbContext.Ledgers.FindAsync([destinationLedgerId], ct);

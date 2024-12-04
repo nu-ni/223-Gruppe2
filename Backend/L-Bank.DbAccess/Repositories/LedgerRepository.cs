@@ -17,6 +17,7 @@ public class LedgerRepository(
     : ILedgerRepository
 {
     private const int MaxRetries = 10;
+    private const IsolationLevel IsolationLevel = System.Data.IsolationLevel.Serializable;
 
     private readonly DatabaseSettings _databaseSettings = databaseSettings.Value;
 
@@ -63,14 +64,13 @@ public class LedgerRepository(
     {
         var retries = 0;
         IDbContextTransaction? transaction = null;
-        const IsolationLevel isolationLevel = IsolationLevel.ReadCommitted;
 
         while (retries < MaxRetries)
         {
             try
             {
                 transaction =
-                    await context.Database.BeginTransactionAsync(isolationLevel, ct);
+                    await context.Database.BeginTransactionAsync(IsolationLevel, ct);
                 var ledgerToDelete = await context.Ledgers.FindAsync([id], ct);
 
                 if (ledgerToDelete == null)
