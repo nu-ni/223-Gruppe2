@@ -3,14 +3,14 @@
 
     <!-- Explanation -->
     <p>
-        Use the dropdown menus to select the Debit and Credit ledgers for the transaction. 
-        Enter the amount to transfer. Click the arrow to swap the Debit and Credit ledgers 
+        Use the dropdown menus to select the Debit and Credit ledgers for the transaction.
+        Enter the amount to transfer. Click the arrow to swap the Debit and Credit ledgers
         to reverse the transaction direction. Ensure that:
     </p>
-
+    
     <form (ngSubmit)="onSubmit()" class="d-flex flex-column">
-        <!-- Row for Debit, Arrow, Credit -->
-        <div class="d-flex align-items-center">
+         <!-- Row for Debit, Arrow, Credit -->
+         <div class="d-flex align-items-center">
             <!-- Dropdown for Debit Ledger -->
             <div class="mx-3">
                 <label for="debitLedger" class="form-label">Debit:</label>
@@ -26,8 +26,8 @@
             </div>
 
             <!-- Arrow -->
-            <span class="mx-3 fs-2" style="line-height: 0; cursor: pointer;" (click)="swapLedgers()"
-                title="Swap Debit and Credit">
+            <span class="mx-3 fs-2 d-flex align-items-center justify-content-center"
+                style="line-height: 1; cursor: pointer;" (click)="swapLedgers()" title="Swap Debit and Credit">
                 →
             </span>
 
@@ -50,7 +50,10 @@
         <div class="mt-4 mx-3">
             <label for="amount" class="form-label">Amount:</label>
             <input type="number" id="amount" [(ngModel)]="amount" name="amount" class="form-control"
-                placeholder="Enter transaction amount" required style="max-width: 250px;" />
+                placeholder="Enter transaction amount" required min="1" style="max-width: 250px;" />
+            <div *ngIf="amount !== null && amount <= 0" class="text-danger mt-2">
+                Amount must be greater than zero.
+            </div>
         </div>
 
         <!-- Submit Button -->
