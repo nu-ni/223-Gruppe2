@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { LedgerService } from './ledger.service';
+import { BookingService } from './booking.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
@@ -18,7 +19,10 @@ export class TransactionComponent implements OnInit {
   creditLedgerBalance: number | null = null;
   amount: number | null = null; // Transaction amount
 
-  constructor(private ledgerService: LedgerService) {}
+  constructor(
+    private ledgerService: LedgerService,
+    private bookingService: BookingService // Inject the service
+  ) {}
 
   ngOnInit(): void {
     this.fetchLedgers();
@@ -89,13 +93,35 @@ export class TransactionComponent implements OnInit {
       alert('The transaction amount cannot exceed 100 million!');
       return;
     }
+
+    this.bookingService.book(this.debitLedger, this.creditLedger, this.amount)
+    .subscribe({
+      next: () => {
+        // Notify the user of success
+        alert('Transaction successfully booked!');
+        
+        // Log the transaction details
+        console.log('Transaction booked:', {
+          debit: this.debitLedger,
+          credit: this.creditLedger,
+          amount: this.amount,
+        });
   
-    console.log('Transaction submitted', {
-      debit: this.debitLedger,
-      credit: this.creditLedger,
-      amount: this.amount,
-    });
+        // Refresh the ledger balances to reflect the updated data
+        this.fetchLedgers();
   
-    alert('Transaction successfully submitted!');
+        // Reset the selected ledgers and amount for clarity after successful transaction
+        this.debitLedger = '';
+        this.creditLedger = '';
+        this.amount = null;
+        this.debitLedgerBalance = null;
+        this.creditLedgerBalance = null;
+      },
+      error: (error) => {
+        // Notify the user of failure
+        console.error('Booking failed:', error);
+        alert('Failed to submit the transaction.');
+      }
+    });  
   }
 }
