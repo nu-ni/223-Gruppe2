@@ -21,11 +21,13 @@ public class BookingsController(IBookingRepository bookingRepository) : Controll
         {
             var success = await bookingRepository.Book(booking.SourceId, booking.DestinationId, booking.Amount,
                 new CancellationToken());
-            return success ? Ok($"Successfully transferred {booking.Amount} from ledger {booking.SourceId} to ledger {booking.DestinationId} ledger") : Conflict("Unable to process transaction.");
+            return success
+                ? Ok($"Successfully transferred {booking.Amount} from ledger {booking.SourceId} to ledger {booking.DestinationId} ledger")
+                : Conflict(new { error = "Unable to process transaction." });
         }
         catch (Exception ex)
         {
-            return Problem("An Error occurred while processing the booking transaction ");
+            return Problem(detail: ex.Message, title: "An error occurred while processing the booking transaction.");
         }
     }
 }
