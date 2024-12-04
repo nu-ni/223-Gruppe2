@@ -60,8 +60,11 @@ namespace LBank.Tests.Loadtest.Cli
             decimal finalBalance = CalculateTotalBalance(finalLedgers);
             Console.WriteLine($"Starting money: {initialBalance}");
             Console.WriteLine($"Ending money: {finalBalance}");
-
-            decimal difference = finalBalance - initialBalance;
+            Console.WriteLine("Ledgers:");
+            foreach (var ledger in finalLedgers)
+            {
+                Console.WriteLine($"ID: {ledger.id}, Amount: {ledger.balance}");
+            }            decimal difference = finalBalance - initialBalance;
             Console.WriteLine($"Difference: {difference}");
 
             Console.WriteLine("Press any key to exit");
@@ -92,8 +95,8 @@ namespace LBank.Tests.Loadtest.Cli
                 using var httpClient = new HttpClient();
                 var booking = new
                 {
-                    SourceId = 2,
-                    DestinationId = 1,
+                    SourceId = 3,
+                    DestinationId = 2,
                     Amount = 1
                 };
 
