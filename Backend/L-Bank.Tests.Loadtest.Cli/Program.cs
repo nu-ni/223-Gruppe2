@@ -5,6 +5,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using NBomber.Contracts;
+using NBomber.Contracts.Stats;
+using NBomber.CSharp;
+using NBomber.Http.CSharp;
 
 namespace LBank.Tests.Loadtest.Cli
 {
@@ -15,23 +19,58 @@ namespace LBank.Tests.Loadtest.Cli
         static async Task Main(string[] args)
         {
             string jwt = await Login("admin", "adminpass");
-            Console.WriteLine($"JWT: {jwt}");
 
-            var ledgers = await GetAllLedgers(jwt);
-            if (ledgers == null || ledgers.Count == 0)
+            var initialLedgers = await GetAllLedgers(jwt);
+            if (initialLedgers == null || initialLedgers.Count == 0)
             {
-                Console.WriteLine("No ledgers found.");
+                Console.WriteLine("No initial ledgers found.");
             }
             else
             {
-                foreach (var ledger in ledgers)
-                {
-                    Console.WriteLine(ledger.name);
-                }
+                Console.WriteLine("Initial ledgers found.");
             }
+
+            decimal initialBalance = CalculateTotalBalance(initialLedgers);
+            
+
+            Console.WriteLine("Starting NBomber load test...");
+            var scenario = CreateScenario(httpClient);
+            NBomberRunner
+                .RegisterScenarios(scenario)
+                .WithReportFileName("reports")
+                .WithReportFolder("reports")
+                .WithReportFormats(ReportFormat.Html)
+                .Run();
+
+            var finalLedgers = await GetAllLedgers(jwt);
+            decimal finalBalance = CalculateTotalBalance(finalLedgers);
+            Console.WriteLine($"Starting money: {initialBalance}");
+            Console.WriteLine($"Ending money: {finalBalance}");
+
+            decimal difference = finalBalance - initialBalance;
+            Console.WriteLine($"Difference: {difference}");
 
             Console.WriteLine("Press any key to exit");
             Console.ReadKey();
+        }
+
+        static ScenarioProps CreateScenario(HttpClient httpClient)
+        {
+            return Scenario.Create("http_scenario", async _ =>
+                {
+                    var request =
+                        Http.CreateRequest("GET", "http://localhost:5000/api/v1/lbankinfo")
+                            .WithHeader("Accept", "application/json");
+
+                    var response = await Http.Send(httpClient, request);
+                    return response;
+                })
+                .WithoutWarmUp()
+                .WithLoadSimulations(
+                    Simulation.Inject(rate: 100,
+                        interval: TimeSpan.FromSeconds(1),
+                        during: TimeSpan.FromSeconds(30))
+                );
         }
 
         static async Task<string> Login(string username, string password)
@@ -58,6 +97,16 @@ namespace LBank.Tests.Loadtest.Cli
             Console.WriteLine($"Response Content: {responseContent}");
 
             return JsonSerializer.Deserialize<List<Ledger>>(responseContent);
+        }
+
+        static decimal CalculateTotalBalance(List<Ledger> ledgers)
+        {
+            decimal totalBalance = 0;
+            foreach (var ledger in ledgers)
+            {
+                totalBalance += ledger.balance;
+            }
+            return totalBalance;
         }
     }
 
