@@ -6,20 +6,16 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace L_Bank_W_Backend.Controllers
 {
-
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class LoginController : ControllerBase
+    public class LoginController(IUserRepository userRepository, ILoginService loginService) : ControllerBase
     {
-        private readonly IUserRepository userRepository;
-        private readonly ILoginService loginService;
+        private readonly IUserRepository _userRepository =
+            userRepository ?? throw new ArgumentNullException(nameof(userRepository));
 
-        public LoginController(IUserRepository userRepository, ILoginService loginService)
-        {
-            this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            this.loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
-        }
-        
+        private readonly ILoginService _loginService =
+            loginService ?? throw new ArgumentNullException(nameof(loginService));
+
         [HttpPost]
         public async Task<IActionResult> Post([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] LoginDto login)
         {
@@ -27,20 +23,19 @@ namespace L_Bank_W_Backend.Controllers
             {
                 IActionResult response;
 
-                User? user = this.userRepository.Authenticate(login.Username, login.Password);
-                
+                var user = _userRepository.Authenticate(login.Username, login.Password);
+
                 if (user == null)
                 {
                     response = Unauthorized();
                 }
                 else
                 {
-                    response = Ok(new { token = this.loginService.CreateJwt(user) });
+                    response = Ok(new { token = _loginService.CreateJwt(user) });
                 }
-                
+
                 return response;
             });
         }
     }
-
 }

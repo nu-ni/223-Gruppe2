@@ -20,16 +20,6 @@ public class LedgerRepository(
 
     private readonly DatabaseSettings _databaseSettings = databaseSettings.Value;
 
-    public void Book(decimal amount, Ledger from, Ledger to)
-    {
-        from.Balance -= amount;
-        this.Update(from);
-        // Complicate calculations
-        Thread.Sleep(250);
-        to.Balance += amount;
-        this.Update(to);
-    }
-
     public decimal GetTotalMoney()
     {
         const string query = @$"SELECT SUM(balance) AS TotalBalance FROM {Ledger.CollectionName}";
