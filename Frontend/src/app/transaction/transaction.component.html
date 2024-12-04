@@ -7,15 +7,15 @@
         Enter the amount to transfer. Click the arrow to swap the Debit and Credit ledgers
         to reverse the transaction direction. Ensure that:
     </p>
-    
+
     <form (ngSubmit)="onSubmit()" class="d-flex flex-column">
         <!-- Row for Debit, Arrow, Credit -->
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center justify-content-between gap-5 flex-wrap form-row">
             <!-- Dropdown for Debit Ledger -->
-            <div class="mx-3">
+            <div class="form-group">
                 <label for="debitLedger" class="form-label">Debit:</label>
-                <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger" class="form-select" required
-                    (change)="updateDebitLedgerBalance()">
+                <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger" class="form-select ledger-dropdown"
+                    required (change)="updateDebitLedgerBalance()">
                     <option *ngFor="let ledger of ledgers" [value]="ledger.id">
                         {{ ledger.name }}
                     </option>
@@ -25,17 +25,20 @@
                 </div>
             </div>
 
-            <!-- Arrow -->
-            <span class="mx-3 fs-2 d-flex align-items-center justify-content-center"
-                style="line-height: 1; cursor: pointer;" (click)="swapLedgers()" title="Swap Debit and Credit">
-                →
-            </span>
+            <!-- Arrow with animation -->
+            <div class="swap-arrow d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
+                    class="bi bi-arrow-left-right arrow-icon" viewBox="0 0 16 16" (click)="swapLedgers()">
+                    <path fill-rule="evenodd"
+                        d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5" />
+                </svg>
+            </div>
 
             <!-- Dropdown for Credit Ledger -->
-            <div class="mx-3">
+            <div class="form-group">
                 <label for="creditLedger" class="form-label">Credit:</label>
-                <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger" class="form-select" required
-                    (change)="updateCreditLedgerBalance()">
+                <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger" class="form-select ledger-dropdown"
+                    required (change)="updateCreditLedgerBalance()">
                     <option *ngFor="let ledger of ledgers" [value]="ledger.id">
                         {{ ledger.name }}
                     </option>
@@ -47,18 +50,18 @@
         </div>
 
         <!-- Input for Amount -->
-        <div class="mt-4 mx-3">
+        <div class="mt-4">
             <label for="amount" class="form-label">Amount:</label>
             <input type="number" id="amount" [(ngModel)]="amount" name="amount" class="form-control"
-                placeholder="Enter transaction amount" required min="1" style="max-width: 250px;" />
+                placeholder="Enter transaction amount" required min="1" />
             <div *ngIf="amount !== null && amount <= 0" class="text-danger mt-2">
                 Amount must be greater than zero.
             </div>
         </div>
 
         <!-- Submit Button -->
-        <div class="mt-4 mx-3">
-            <button type="submit" class="btn btn-primary">Submit Transaction</button>
+        <div class="mt-5">
+            <button type="submit" class="btn btn-primary btn-lg submit-button">Submit Transaction</button>
         </div>
     </form>
 </div>

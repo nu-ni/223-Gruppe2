@@ -1,0 +1,62 @@
+/* Allgemeines Styling */
+.form-row {
+    margin-bottom: 3rem;
+    justify-content: space-between;
+    transition: all 0.4s ease-in-out;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.ledger-dropdown {
+    min-width: 250px;
+    height: 45px;
+    padding: 8px 12px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ledger-dropdown:focus {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation für Swap-Arrow */
+.swap-arrow {
+    margin: 0 16px;
+    cursor: pointer;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.arrow-icon {
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.swap-arrow:hover .arrow-icon {
+    transform: rotate(360deg);
+    color: #007bff;
+}
+
+/* Amount Input */
+input[type="number"] {
+    max-width: 300px;
+    padding: 10px;
+    border-radius: 6px;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+input[type="number"]:focus {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+/* Submit Button */
+.submit-button {
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.submit-button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
