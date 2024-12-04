@@ -17,8 +17,15 @@ public class BookingsController(IBookingRepository bookingRepository) : Controll
         Booking booking
     )
     {
-        // TODO: Error handling
-        var success = await bookingRepository.Book(booking.SourceId, booking.DestinationId, booking.Amount, new CancellationToken());
-        return success ? Ok() : Conflict();
+        try
+        {
+            var success = await bookingRepository.Book(booking.SourceId, booking.DestinationId, booking.Amount,
+                new CancellationToken());
+            return success ? Ok($"Successfully transferred {booking.Amount} from ledger {booking.SourceId} to ledger {booking.DestinationId} ledger") : Conflict("Unable to process transaction.");
+        }
+        catch (Exception ex)
+        {
+            return Problem("An Error occurred while processing the booking transaction ");
+        }
     }
 }

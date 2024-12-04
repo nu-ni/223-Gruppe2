@@ -9,17 +9,11 @@ namespace L_Bank_W_Backend.DbAccess.Repositories;
 public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository> logger)
     : IBookingRepository
 {
-    private const int MaxRetries = 10;
+    private const int MaxRetries = 20;
 
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
-        logger.LogInformation(
-            "Starting book operation with source '{sourceLedgerId}' and destination '{destinationLedgerId}'."
-            , sourceLedgerId, destinationLedgerId);
-
-        for (var retries = 0;
-             retries < MaxRetries;
-             retries++)
+        for (var retries = 0; retries < MaxRetries; retries++)
         {
             IDbContextTransaction? transaction = null;
             try
