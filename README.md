@@ -27,3 +27,10 @@ Mögliche Probleme bei einer Multiuserapplikation wären:
 
 - **Löschen eines Kontos**: Beim Löschen eines Kontos wird eine Transaktion verwendet, um sicherzustellen, dass der Löschvorgang atomar ist und bei einem Fehler zurückgerollt werden kann. Dies verhindert inkonsistente Zustände in der Datenbank. So kann ein Konto nicht gelöscht werden, wenn beispielsweise noch eine Überweisung aussteht.
 - **Erstellen eines Kontos**: Hier ist keine Transaktion nötig.
+
+### Voraussetzungen für den Lasttest
+
+Um den Lasttest mit dem bereitgestellten `booking_scenario` in der `Program.cs` durchzuführen, müssen folgende Voraussetzungen erfüllt sein:
+
+1. **Vorhandene Ledger:** Der SourceLedger und der DestinationLedger müssen bereits in der Datenbank existieren.
+2. **Ausreichendes Guthaben:** Der SourceLedger muss über ausreichend Guthaben verfügen, um den Transaktionsbetrag (z. B. `Amount = 1`) abzudecken.
