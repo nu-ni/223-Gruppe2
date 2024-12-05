@@ -10,7 +10,6 @@ export class BookingService {
 
   constructor(private http: HttpClient) {}
 
-  // Method for booking transactions
   book(SourceId: string, DestinationId: string, Amount: number): Observable<any> {
     const bookingData = {
       SourceId: parseInt(SourceId, 10),

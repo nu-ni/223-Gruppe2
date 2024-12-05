@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { LedgerService } from './ledger.service';
 import { BookingService } from './booking.service';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { HistoryComponent } from '../history/history.component';
   styleUrls: ['./transaction.component.css'],
 })
 
-export class TransactionComponent implements OnInit {
+export class TransactionComponent implements OnInit, AfterViewInit {
   @ViewChild(HistoryComponent) historyComponent!: HistoryComponent;
 
   ledgers: any[] = [];
@@ -31,6 +31,12 @@ export class TransactionComponent implements OnInit {
     this.fetchLedgers();
   }
 
+  ngAfterViewInit(): void {
+    if (this.historyComponent) {
+      this.historyComponent.fetchHistory();
+    }
+  }
+
   fetchLedgers() {
     this.ledgerService.getLedgers().subscribe(
       (data) => {
@@ -43,12 +49,16 @@ export class TransactionComponent implements OnInit {
   }
 
   updateDebitLedgerBalance(): void {
-    const selectedLedger = this.ledgers.find(ledger => ledger.id === +this.debitLedger);
+    const selectedLedger = this.ledgers.find(
+      (ledger) => ledger.id === +this.debitLedger
+    );
     this.debitLedgerBalance = selectedLedger ? selectedLedger.balance : null;
   }
 
   updateCreditLedgerBalance(): void {
-    const selectedLedger = this.ledgers.find(ledger => ledger.id === +this.creditLedger);
+    const selectedLedger = this.ledgers.find(
+      (ledger) => ledger.id === +this.creditLedger
+    );
     this.creditLedgerBalance = selectedLedger ? selectedLedger.balance : null;
   }
 
@@ -69,20 +79,55 @@ export class TransactionComponent implements OnInit {
   }
 
   onSubmit() {
-    if (!this.debitLedger || !this.creditLedger || this.debitLedger === this.creditLedger || this.amount === null || this.amount <= 0) {
-      alert('Invalid transaction details!');
+    if (!this.debitLedger) {
+      alert('Please select a Debit Ledger.');
+      return;
+    }
+
+    if (!this.creditLedger) {
+      alert('Please select a Credit Ledger.');
+      return;
+    }
+
+    if (this.debitLedger === this.creditLedger) {
+      alert('Debit and Credit cannot be the same ledger!');
+      return;
+    }
+
+    if (this.amount === null || this.amount <= 0) {
+      alert('The amount must be a positive number!');
+      return;
+    }
+
+    if (
+      this.debitLedgerBalance !== null &&
+      this.amount > this.debitLedgerBalance
+    ) {
+      alert('Insufficient funds in the debit ledger!');
+      return;
+    }
+
+    if (this.amount > 100_000_000) {
+      alert('The transaction amount cannot exceed 100 million!');
       return;
     }
 
     this.bookingService.book(this.debitLedger, this.creditLedger, this.amount).subscribe({
       next: () => {
         alert('Transaction successfully booked!');
+        
+        this.fetchLedgers();
+
         this.resetForm();
+
+        if (this.historyComponent) {
+          this.historyComponent.fetchHistory();
+        }
       },
       error: (error) => {
         console.error('Booking failed:', error);
-        alert('Failed to submit the transaction.');
-      }
+        alert(`Failed to submit the transaction. Error: ${error.message || 'Unknown error'}`);
+      },
     });
   }
 }
