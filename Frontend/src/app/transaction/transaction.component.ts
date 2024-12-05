@@ -13,7 +13,7 @@ import { HistoryComponent } from '../history/history.component';
 })
 
 export class TransactionComponent implements OnInit {
-  @ViewChild(HistoryComponent) historyComponent!: HistoryComponent; // Referenz zum HistoryComponent
+  @ViewChild(HistoryComponent) historyComponent!: HistoryComponent;
 
   ledgers: any[] = [];
   debitLedger: string = '';
@@ -77,7 +77,7 @@ export class TransactionComponent implements OnInit {
     this.bookingService.book(this.debitLedger, this.creditLedger, this.amount).subscribe({
       next: () => {
         alert('Transaction successfully booked!');
-        this.resetForm(); // Formular zurücksetzen
+        this.resetForm();
       },
       error: (error) => {
         console.error('Booking failed:', error);

@@ -1,26 +1,22 @@
-.history-container {
-    padding: 20px;
+.container {
+    max-width: 800px;
+    margin: auto;
+    margin-bottom: 5%;
 }
 
-.history-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+.card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: none;
 }
 
-.history-table th,
-.history-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+.table {
+    margin-bottom: 0;
 }
 
-.history-table th {
-    background-color: #f4f4f4;
-    font-weight: bold;
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
 }
 
-.error {
-    color: red;
-    margin-top: 10px;
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f3f3f3;
 }

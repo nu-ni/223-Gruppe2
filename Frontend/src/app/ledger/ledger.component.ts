@@ -3,7 +3,7 @@ import { LedgerService } from '../../services/ledger.service';
 import { Ledger } from '../../models/ledger.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { TransactionComponent } from '../transaction/transaction.component';
 import { HistoryComponent } from '../history/history.component';
 

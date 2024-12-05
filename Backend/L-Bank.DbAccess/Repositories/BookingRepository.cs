@@ -11,13 +11,6 @@ public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository
 {
     private const int MaxRetries = 20;
 
-    public async Task<IEnumerable<Booking>> GetBookingHistory(CancellationToken ct)
-    {
-        return await dbContext.Bookings // Assuming `Bookings` is the DbSet for Booking entities
-            .AsNoTracking()
-            .ToListAsync(ct);
-    }
-
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
         for (var retries = 0; retries < MaxRetries; retries++)
@@ -89,27 +82,27 @@ public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository
         return false;
     }
 
-    public async Task<List<object>> GetTransactionHistory(CancellationToken ct)
+    public async Task<IEnumerable<object>> GetBookingHistory(CancellationToken ct)
     {
-        var transactions = await dbContext.Bookings
+        var history = await dbContext.Bookings
             .AsNoTracking()
             .Select(b => new
             {
                 b.Id,
                 b.SourceId,
                 b.DestinationId,
-                SourceLedgerName = dbContext.Ledgers
+                b.Amount,
+                Source = dbContext.Ledgers
                     .Where(l => l.Id == b.SourceId)
                     .Select(l => l.Name)
                     .FirstOrDefault(),
-                DestinationLedgerName = dbContext.Ledgers
+                Destination = dbContext.Ledgers
                     .Where(l => l.Id == b.DestinationId)
                     .Select(l => l.Name)
-                    .FirstOrDefault(),
-                b.Amount,
+                    .FirstOrDefault()
             })
             .ToListAsync(ct);
 
-        return transactions.Cast<object>().ToList(); // Return as a list of objects
+        return history.Cast<object>();
     }
 }
