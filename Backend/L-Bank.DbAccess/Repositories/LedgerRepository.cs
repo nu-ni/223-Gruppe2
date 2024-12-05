@@ -38,7 +38,7 @@ public class LedgerRepository(
 
     public async Task<IEnumerable<Ledger>> GetAllLedgers(CancellationToken ct)
     {
-        var transactionManager = new TransactionManager(context);
+        var transactionManager = new CustomTransactionManager(context);
         return await transactionManager.ExecuteTransactionAsync(GetLedgersTransactionAsync, ct);
     }
 
@@ -53,7 +53,7 @@ public class LedgerRepository(
 
     public async Task<bool> DeleteLedger(int id, CancellationToken ct)
     {
-        var transactionManager = new TransactionManager(context);
+        var transactionManager = new CustomTransactionManager(context);
         var result = await transactionManager.ExecuteTransactionAsync<bool>(
             async (ctx, token) =>
             {

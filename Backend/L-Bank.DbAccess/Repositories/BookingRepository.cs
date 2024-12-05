@@ -1,34 +1,18 @@
-﻿using System.Transactions;
-using L_Bank_W_Backend.DbAccess.Data;
+﻿using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Util;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using TransactionManager = L_Bank_W_Backend.DbAccess.Util.TransactionManager;
 
 namespace L_Bank_W_Backend.DbAccess.Repositories;
 
-public class BookingRepository(AppDbContext context, ILogger<BookingRepository> logger) : IBookingRepository
+public class BookingRepository(AppDbContext context) : IBookingRepository
 {
+    private readonly CustomTransactionManager _transactionManager = new(context);
+
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
-        try
-        {
-            var transactionManager = new TransactionManager(context);
-
-            return await transactionManager.ExecuteTransactionAsync(
-                async (ctx, token) => await ExecuteBookingTransactionAsync(ctx, sourceLedgerId, destinationLedgerId, amount, token),
-                ct);
-        }
-        catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
-        {
-            logger.LogError(ex, "A deadlock occurred during the booking operation.");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An exception occurred during the booking operation.");
-        }
-
-        return false;
+        return await _transactionManager.ExecuteTransactionAsync(
+            async (ctx, token) =>
+                await ExecuteBookingTransactionAsync(ctx, sourceLedgerId, destinationLedgerId, amount, token),
+            ct);
     }
 
     private static async Task<bool> ExecuteBookingTransactionAsync(

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace L_Bank_W_Backend.DbAccess.Util;
 
-public class TransactionManager(AppDbContext context)
+public class CustomTransactionManager(AppDbContext context)
 {
     public async Task<TResult> ExecuteTransactionAsync<TResult>(
         Func<AppDbContext, CancellationToken, Task<TResult>> transactionalOperations,
