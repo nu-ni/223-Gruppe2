@@ -105,15 +105,18 @@ namespace L_Bank_W_Backend
                 c.AddSecurityRequirement(securityRequirement);
             });
 
-
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
                     builder.Configuration.GetSection("DatabaseSettings:ConnectionString").Value,
-                    sqlOptions => sqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(2),
-                        errorNumbersToAdd: [1205] // Deadlock error number
-                    )
+                    sqlOptions =>
+                    {
+                        sqlOptions.MigrationsAssembly("L-Bank.Web");
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(2),
+                            errorNumbersToAdd: new List<int> { 1205 } // Deadlock error number
+                        );
+                    }
                 )
             );
 

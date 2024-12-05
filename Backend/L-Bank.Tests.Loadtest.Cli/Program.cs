@@ -76,8 +76,8 @@ class Program
                 using var httpClient = new HttpClient();
                 var booking = new
                 {
-                    SourceId = 3,
-                    DestinationId = 2,
+                    SourceId = 2,
+                    DestinationId = 1,
                     Amount = 1
                 };
 
