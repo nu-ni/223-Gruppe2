@@ -19,14 +19,20 @@ Mögliche Probleme bei einer Multiuserapplikation wären:
 ### Massnahmen:
 
 - **Transaktionen verwenden**: Alle Operationen innerhalb einer Transaktion ausführen, um sicherzustellen, dass sie atomar sind.
-- **Optimistische Sperrung**: Versionierung verwenden, um sicherzustellen, dass keine Daten überschrieben werden, die sich seit dem letzten Lesen geändert haben.
 - **Wiederholte Versuche**: Bei einem Fehler die gesamte Operation in einer Schleife neu starten.
-- Die genaue Implementation ist in der Methode Book im Bookingrepository zu finden.
+- Die genaue Implementation ist in der Methode Book im BookingRepository zu finden.
 
 ### Transaktionssicherheit bei neuen Features
 
 - **Löschen eines Kontos**: Beim Löschen eines Kontos wird eine Transaktion verwendet, um sicherzustellen, dass der Löschvorgang atomar ist und bei einem Fehler zurückgerollt werden kann. Dies verhindert inkonsistente Zustände in der Datenbank. So kann ein Konto nicht gelöscht werden, wenn beispielsweise noch eine Überweisung aussteht.
 - **Erstellen eines Kontos**: Hier ist keine Transaktion nötig.
 
-## Sequenzdiagramm eines Features
+### Sicherstellung Transaktionssicherheit die via Unittests und Lasttests
+Wir haben Lasttests hierfür verwendet. Diese Tests simulieren eine hohe Anzahl gleichzeitiger Transaktionen, um sicherzustellen, dass das System unter Last korrekt funktioniert. Wir haben die Summe aller Kontostände zu Beginn geloggt und am Ende. Wenn die Beträge nach den Tests gleich hoch waren, war die Transaktionssicherheit gewährleistet. Das haben wir erreicht.
+
+### Unsere weiteren Features im Backend und Frontend
+Wir haben implementiert: Erstellen eines Kontos und Löschen eines Kontos.
+
+
+### Sequenzdiagramm eines Features
 <img width="938" alt="image" src="https://github.com/user-attachments/assets/a2d63d77-4ef8-4499-a964-af49eac08195">
