@@ -14,8 +14,8 @@
             <!-- Dropdown for Debit Ledger -->
             <div class="form-group">
                 <label for="debitLedger" class="form-label">Debit:</label>
-                <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger" class="form-select ledger-dropdown"
-                    required (change)="updateDebitLedgerBalance()">
+                <select id="debitLedger" [(ngModel)]="debitLedger" name="debitLedger"
+                    class="form-select ledger-dropdown" required (change)="updateDebitLedgerBalance()">
                     <option *ngFor="let ledger of ledgers" [value]="ledger.id">
                         {{ ledger.name }}
                     </option>
@@ -37,8 +37,8 @@
             <!-- Dropdown for Credit Ledger -->
             <div class="form-group">
                 <label for="creditLedger" class="form-label">Credit:</label>
-                <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger" class="form-select ledger-dropdown"
-                    required (change)="updateCreditLedgerBalance()">
+                <select id="creditLedger" [(ngModel)]="creditLedger" name="creditLedger"
+                    class="form-select ledger-dropdown" required (change)="updateCreditLedgerBalance()">
                     <option *ngFor="let ledger of ledgers" [value]="ledger.id">
                         {{ ledger.name }}
                     </option>
@@ -50,7 +50,7 @@
         </div>
 
         <!-- Input for Amount -->
-        <div class="mt-4">
+        <div>
             <label for="amount" class="form-label">Amount:</label>
             <input type="number" id="amount" [(ngModel)]="amount" name="amount" class="form-control"
                 placeholder="Enter transaction amount" required min="1" />

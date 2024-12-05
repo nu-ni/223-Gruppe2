@@ -1,4 +1,3 @@
-/* Allgemeines Styling */
 .form-row {
     margin-bottom: 3rem;
     justify-content: space-between;
@@ -38,11 +37,10 @@
     color: #007bff;
 }
 
-/* Amount Input */
 input[type="number"] {
     max-width: 300px;
     padding: 10px;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
@@ -51,7 +49,6 @@ input[type="number"]:focus {
     transform: scale(1.05);
 }
 
-/* Submit Button */
 .submit-button {
     transition: background-color 0.3s ease, transform 0.2s ease;
 }
