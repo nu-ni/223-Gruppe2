@@ -1,4 +1,4 @@
-﻿using L_Bank_W_Backend.DbAccess.Data;
+using L_Bank_W_Backend.DbAccess.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

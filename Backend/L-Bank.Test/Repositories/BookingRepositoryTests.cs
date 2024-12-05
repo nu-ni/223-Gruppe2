@@ -2,14 +2,17 @@
 using L_Bank_W_Backend.DbAccess;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Repositories;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-public class BookingRepositoryTests
+public class BookingRepositoryTests : IDisposable
 {
-    private readonly Mock<ILogger<BookingRepository>> _loggerMock;
+    private readonly Mock<ILogger<BookingRepository>> _loggerMock = new();
+    private readonly AppDbContext _context;
+    private readonly SqliteConnection _connection;
 
     public BookingRepositoryTests()
     {
