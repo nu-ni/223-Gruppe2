@@ -94,7 +94,7 @@ class Program
                 using var httpClient = new HttpClient();
                 var booking = new
                 {
-                    SourceId = 3,
+                    SourceId = 1,
                     DestinationId = 2,
                     Amount = 1
                 };
@@ -110,9 +110,8 @@ class Program
                 return response;
             })
             .WithoutWarmUp()
-            .WithLoadSimulations(
-                Simulation.Inject(rate: 10, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(60))
-            );
+            .WithLoadSimulations(Simulation.Inject(rate: 10, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(60)));
+
     }
 
     static async Task<string?> Login(HttpClient httpClient, string username, string password)
