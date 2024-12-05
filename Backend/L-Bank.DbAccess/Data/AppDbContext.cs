@@ -28,12 +28,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(e => e.DestinationId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasIndex(b => b.SourceId)
-                .HasDatabaseName("IDX_Booking_SourceId");
-
-            entity.HasIndex(b => b.DestinationId)
-                .HasDatabaseName("IDX_Booking_DestinationId");
         });
             
         modelBuilder.Entity<User>(entity =>
