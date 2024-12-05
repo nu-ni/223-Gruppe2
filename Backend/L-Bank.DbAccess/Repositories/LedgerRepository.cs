@@ -4,7 +4,6 @@ using L_Bank_W_Backend.Core.Models;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -25,7 +24,7 @@ public class LedgerRepository(
         const string query = @$"SELECT SUM(balance) AS TotalBalance FROM {Ledger.CollectionName}";
         decimal totalBalance = 0;
 
-        using var conn = new SqlConnection(this._databaseSettings.ConnectionString);
+        using var conn = new SqlConnection(_databaseSettings.ConnectionString);
         conn.Open();
         using var cmd = new SqlCommand(query, conn);
         var result = cmd.ExecuteScalar();
@@ -39,72 +38,47 @@ public class LedgerRepository(
 
     public async Task<IEnumerable<Ledger>> GetAllLedgers(CancellationToken ct)
     {
-        await using var transaction =
-            await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken: ct);
-        try
-        {
-            var allLedgers = await context.Ledgers
-                .AsNoTracking()
-                .OrderBy(ledger => ledger.Name)
-                .ToListAsync(cancellationToken: ct);
+        var transactionManager = new TransactionManager(context);
+        return await transactionManager.ExecuteTransactionAsync(GetLedgersTransactionAsync, ct);
+    }
 
-            await transaction.CommitAsync(ct);
-
-            return allLedgers;
-        }
-        catch
-        {
-            await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
-            throw;
-        }
+    private static async Task<IEnumerable<Ledger>> GetLedgersTransactionAsync(AppDbContext context,
+        CancellationToken ct)
+    {
+        return await context.Ledgers
+            .AsNoTracking()
+            .OrderBy(ledger => ledger.Name)
+            .ToListAsync(ct);
     }
 
     public async Task<bool> DeleteLedger(int id, CancellationToken ct)
     {
-        var retries = 0;
-        IDbContextTransaction? transaction = null;
-        const IsolationLevel isolationLevel = IsolationLevel.ReadCommitted;
-
-        while (retries < MaxRetries)
-        {
-            try
+        var transactionManager = new TransactionManager(context);
+        var result = await transactionManager.ExecuteTransactionAsync<bool>(
+            async (ctx, token) =>
             {
-                transaction =
-                    await context.Database.BeginTransactionAsync(isolationLevel, ct);
-                var ledgerToDelete = await context.Ledgers.FindAsync([id], ct);
+                var ledgerToDelete = await ctx.Ledgers.FindAsync(new object[] { id }, token);
 
                 if (ledgerToDelete == null)
                 {
-                    logger?.LogInformation($"Ledger with id {id} not found.");
+                    logger.LogInformation("Ledger with id {Id} not found.", id);
                     return false;
                 }
 
-                context.Ledgers.Remove(ledgerToDelete);
-                await context.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
+                ctx.Ledgers.Remove(ledgerToDelete);
+                await ctx.SaveChangesAsync(token);
 
                 return true;
-            }
-            catch (SqlException ex) when (ex.Number == 1205)
-            {
-                retries++;
-                logger?.LogWarning(ex,
-                    "Deadlock occurred while trying to delete ledger with id {Id}. Retrying {RetryCount} time.", id,
-                    retries);
-                await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
-                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError(ex, "An exception occurred while trying to delete ledger with id {Id}.", id);
-                await DatabaseUtil.RollbackAndDisposeTransactionAsync(transaction, ct);
-                throw;
-            }
+            },
+            ct
+        );
+
+        if (!result)
+        {
+            logger.LogWarning("Could not delete the ledger with id {Id}.", id);
         }
 
-        logger?.LogCritical("Delete operation failed for ledger with id {Id} after {MaxRetries} retries.", id,
-            MaxRetries);
-        throw new Exception($"Delete operation failed after {MaxRetries} retries.");
+        return result;
     }
 
     public async Task<Ledger?> SelectOneAsync(int id, CancellationToken ct = default)

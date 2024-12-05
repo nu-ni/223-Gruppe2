@@ -9,7 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Ledger> Ledgers { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Booking> Bookings { get; set; }
-        
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -18,12 +18,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Booking>(entity =>
         {
             entity.HasKey(e => e.Id);
-                
+
             entity.HasOne(e => e.Source)
                 .WithMany()
                 .HasForeignKey(e => e.SourceId)
                 .OnDelete(DeleteBehavior.Restrict);
-                
+
             entity.HasOne(e => e.Destination)
                 .WithMany()
                 .HasForeignKey(e => e.DestinationId)
@@ -35,7 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(b => b.DestinationId)
                 .HasDatabaseName("IDX_Booking_DestinationId");
         });
-            
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(e => e.Role)

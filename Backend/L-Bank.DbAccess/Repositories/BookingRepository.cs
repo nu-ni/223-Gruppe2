@@ -1,74 +1,60 @@
-﻿using System.Data;
+﻿using System.Transactions;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TransactionManager = L_Bank_W_Backend.DbAccess.Util.TransactionManager;
 
 namespace L_Bank_W_Backend.DbAccess.Repositories;
 
-public class BookingRepository(AppDbContext dbContext, ILogger<BookingRepository> logger)
-    : IBookingRepository
+public class BookingRepository(AppDbContext context, ILogger<BookingRepository> logger) : IBookingRepository
 {
-    private const int MaxRetries = 20;
-
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
-        for (var retries = 0; retries < MaxRetries; retries++)
+        try
         {
-            try
-            {
+            var transactionManager = new TransactionManager(context);
 
-                await using var transaction =
-                    await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-
-                var sourceLedger = await dbContext.Ledgers
-                    .Where(l => l.Id == sourceLedgerId)
-                    .FirstOrDefaultAsync(ct);
-
-                var destinationLedger = await dbContext.Ledgers
-                    .Where(l => l.Id == destinationLedgerId)
-                    .FirstOrDefaultAsync(ct);
-
-                if (sourceLedger == null || destinationLedger == null)
-                {
-                    logger.LogWarning(
-                        "Book operation failed with source '{sourceLedgerId}' and destination '{destinationLedgerId}', ledger not found.",
-                        sourceLedgerId, destinationLedgerId);
-                    return false;
-                }
-
-                if (sourceLedger.Balance < amount)
-                {
-                    logger.LogWarning(
-                        "Book operation failed with source '{sourceLedgerId}' and destination '{destinationLedgerId}', insufficient balance.",
-                        sourceLedgerId, destinationLedgerId);
-                    return false;
-                }
-
-                sourceLedger.Balance -= amount;
-                destinationLedger.Balance += amount;
-
-                await dbContext.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-                return true;
-            }
-            catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
-            {
-                logger.LogWarning(ex, "Retry '{RetryCount}' of '{MaxRetries}' due to deadlock.", retries + 1,
-                    MaxRetries);
-
-                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An exception occurred on retry '{RetryCount}' of '{MaxRetries}'.", retries + 1,
-                    MaxRetries);
-
-                if (retries >= MaxRetries - 1) throw;
-                await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
-            }
+            return await transactionManager.ExecuteTransactionAsync(
+                async (ctx, token) => await ExecuteBookingTransactionAsync(ctx, sourceLedgerId, destinationLedgerId, amount, token),
+                ct);
+        }
+        catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
+        {
+            logger.LogError(ex, "A deadlock occurred during the booking operation.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An exception occurred during the booking operation.");
         }
 
         return false;
+    }
+
+    private static async Task<bool> ExecuteBookingTransactionAsync(
+        AppDbContext ctx,
+        int sourceLedgerId,
+        int destinationLedgerId,
+        decimal amount,
+        CancellationToken ct)
+    {
+        var sourceLedger = await ctx.Ledgers.FindAsync([sourceLedgerId], ct);
+        var destinationLedger = await ctx.Ledgers.FindAsync([destinationLedgerId], ct);
+
+        if (sourceLedger == null || destinationLedger == null)
+        {
+            throw new InvalidOperationException("Ledger not found.");
+        }
+
+        if (sourceLedger.Balance < amount)
+        {
+            throw new InvalidOperationException("Insufficient balance.");
+        }
+
+        sourceLedger.Balance -= amount;
+        destinationLedger.Balance += amount;
+
+        await ctx.SaveChangesAsync(ct);
+        return true;
     }
 }

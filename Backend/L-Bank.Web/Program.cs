@@ -107,8 +107,11 @@ namespace L_Bank_W_Backend
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
                     builder.Configuration.GetSection("DatabaseSettings:ConnectionString").Value,
-                    sqlOptions => sqlOptions.MigrationsAssembly("L-Bank.Web")
-
+                    sqlOptions => sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null
+                    )
                 )
             );
 

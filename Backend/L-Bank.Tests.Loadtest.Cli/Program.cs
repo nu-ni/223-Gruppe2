@@ -36,11 +36,10 @@ class Program
         var initialBalance = CalculateTotalBalance(initialLedgers);
 
         Console.WriteLine("Starting NBomber load test...");
-        var httpScenario = CreateHttpScenario();
         var bookingScenario = CreateBookingScenario(jwt);
 
         NBomberRunner
-            .RegisterScenarios(httpScenario, bookingScenario)
+            .RegisterScenarios(bookingScenario)
             .WithReportFileName("reports")
             .WithReportFolder("reports")
             .WithReportFormats(ReportFormat.Html)
@@ -68,23 +67,6 @@ class Program
         {
             Console.WriteLine($"ID: {ledger.Id}, Amount: {ledger.Balance}");
         }
-    }
-
-    static ScenarioProps CreateHttpScenario()
-    {
-        return Scenario.Create("http_scenario", async context =>
-            {
-                using var httpClient = new HttpClient();
-                var request = Http.CreateRequest("GET", "http://localhost:5000/api/v1/lbankinfo")
-                    .WithHeader("Accept", "application/json");
-
-                var response = await Http.Send(httpClient, request);
-                return response;
-            })
-            .WithoutWarmUp()
-            .WithLoadSimulations(
-                Simulation.Inject(rate: 100, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(30))
-            );
     }
 
     private static ScenarioProps CreateBookingScenario(string? jwt)
