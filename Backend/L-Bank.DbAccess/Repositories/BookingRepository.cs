@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Repositories;
+using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -8,6 +9,7 @@ public class BookingRepository : IBookingRepository
 {
     private readonly AppDbContext _dbContext;
     private readonly ILogger<BookingRepository> _logger;
+    private const int MaxRetries = 5;
 
     public BookingRepository(AppDbContext dbContext, ILogger<BookingRepository> logger)
     {
@@ -15,7 +17,9 @@ public class BookingRepository : IBookingRepository
         _logger = logger;
     }
 
-    public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
+public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
+{
+    for (var retries = 0; retries < MaxRetries; retries++)
     {
         using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         try
@@ -29,16 +33,16 @@ public class BookingRepository : IBookingRepository
                 .Where(l => l.Id == destinationLedgerId)
                 .FirstOrDefaultAsync(ct);
 
-            // Ensure ledgers are tracked by EF.
-            _dbContext.Entry(sourceLedger).State = EntityState.Modified;
-            _dbContext.Entry(destinationLedger).State = EntityState.Modified;
-
             // Validation checks.
             if (sourceLedger == null || destinationLedger == null)
             {
                 _logger.LogError("One or both ledgers not found.");
                 return false;
             }
+
+            // Ensure ledgers are tracked by EF.
+            _dbContext.Entry(sourceLedger).State = EntityState.Modified;
+            _dbContext.Entry(destinationLedger).State = EntityState.Modified;
 
             if (sourceLedger.Balance < amount)
             {
@@ -56,11 +60,18 @@ public class BookingRepository : IBookingRepository
 
             return true;
         }
+        catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
+        {
+            _logger.LogWarning(ex, "Retry {RetryCount} of {MaxRetries} due to deadlock.", retries + 1, MaxRetries);
+            await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during booking transaction.");
-            await transaction.RollbackAsync(ct);
-            return false;
+            _logger.LogError(ex, "An exception occurred on retry {RetryCount} of {MaxRetries}.", retries + 1, MaxRetries);
+            if (retries >= MaxRetries - 1) throw;
+            await Task.Delay(DatabaseUtil.ComputeExponentialBackoff(retries), ct);
         }
     }
-}
+
+    return false;
+}}
