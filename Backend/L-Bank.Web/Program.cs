@@ -108,6 +108,7 @@ namespace L_Bank_W_Backend
                 options.UseSqlServer(
                     builder.Configuration.GetSection("DatabaseSettings:ConnectionString").Value,
                     sqlOptions => sqlOptions.MigrationsAssembly("L-Bank.Web")
+
                 )
             );
 
