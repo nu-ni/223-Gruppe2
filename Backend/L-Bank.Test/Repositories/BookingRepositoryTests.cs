@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-public class BookingRepositoryTests : IDisposable
+public class BookingRepositoryTests
 {
     private readonly Mock<ILogger<BookingRepository>> _loggerMock = new();
     private readonly AppDbContext _context;
