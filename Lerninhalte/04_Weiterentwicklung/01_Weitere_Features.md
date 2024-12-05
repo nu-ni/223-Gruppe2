@@ -1,4 +1,4 @@
-# Weiterentwicklung
+# Weiterentwicklung (Fallbeschreibung)
 
 Die LBank hat nun ein grobes Back- und Frontend. Es fehlen jedoch noch einige Features, um die Anwendung zu vervollständigen. 
 
