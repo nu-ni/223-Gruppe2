@@ -1,4 +1,3 @@
-using System.Data;
 using System.Data.SqlClient;
 using L_Bank_W_Backend.Core.Models;
 using L_Bank_W_Backend.DbAccess.Data;
@@ -41,7 +40,7 @@ public async Task<IEnumerable<Ledger>> GetAllLedgers(CancellationToken ct)
 {
     return await _transactionManager.ExecuteTransactionAsync(async (ctx, cancellationToken) =>
     {
-        return await ctx.Ledgers
+        return await context.Ledgers
             .AsNoTracking()
             .OrderBy(ledger => ledger.Name)
             .ToListAsync(cancellationToken);

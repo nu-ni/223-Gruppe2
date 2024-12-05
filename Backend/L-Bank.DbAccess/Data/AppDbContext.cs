@@ -1,7 +1,6 @@
 using L_Bank_W_Backend.Core.Models;
 using L_Bank.Core.Models;
 using Microsoft.EntityFrameworkCore;
-
 namespace L_Bank_W_Backend.DbAccess.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)

@@ -11,11 +11,12 @@ using Moq;
 
 public class LedgerRepositoryTests : IDisposable
 {
-    private readonly Mock<IOptions<DatabaseSettings>> _databaseSettingsMock = new();
-    private readonly Mock<ILogger<LedgerRepository>> _loggerMock = new();
-    private readonly Mock<CustomTransactionManager> _transactionManagerMock = new();
     private readonly AppDbContext _context;
     private readonly SqliteConnection _connection;
+    private readonly Mock<IOptions<DatabaseSettings>> _databaseSettingsMock = new();
+    private readonly Mock<ILogger<LedgerRepository>> _loggerMock = new();
+
+    private Mock<CustomTransactionManager> _transactionManagerMock = new();
 
     public LedgerRepositoryTests()
     {
@@ -39,7 +40,9 @@ public class LedgerRepositoryTests : IDisposable
 
     private LedgerRepository CreateTestee()
     {
-        return new LedgerRepository(_databaseSettingsMock.Object, _context, _transactionManagerMock.Object, _loggerMock.Object);
+        _transactionManagerMock = new Mock<CustomTransactionManager>(_context);
+        return new LedgerRepository(_databaseSettingsMock.Object, _context, _transactionManagerMock.Object,
+            _loggerMock.Object);
     }
 
     [Fact]
