@@ -2,6 +2,7 @@ using System.Text;
 using L_Bank_W_Backend.DbAccess;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Repositories;
+using L_Bank_W_Backend.DbAccess.Util;
 using L_Bank_W_Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,7 @@ namespace L_Bank_W_Backend
                     };
                 });
             builder.Services.AddAuthorization();
+            builder.Services.AddScoped<CustomTransactionManager>();
             builder.Services.AddTransient<IDatabaseSeeder, DatabaseSeeder>();
             builder.Services.AddTransient<ILedgerRepository, LedgerRepository>();
             builder.Services.AddTransient<IUserRepository, UserRepository>();
@@ -103,12 +105,18 @@ namespace L_Bank_W_Backend
                 c.AddSecurityRequirement(securityRequirement);
             });
 
-
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
                     builder.Configuration.GetSection("DatabaseSettings:ConnectionString").Value,
-                    sqlOptions => sqlOptions.MigrationsAssembly("L-Bank.Web")
-
+                    sqlOptions =>
+                    {
+                        sqlOptions.MigrationsAssembly("L-Bank.Web");
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(2),
+                            errorNumbersToAdd: new List<int> { 1205 } // Deadlock error number
+                        );
+                    }
                 )
             );
 

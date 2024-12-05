@@ -36,11 +36,10 @@ class Program
         var initialBalance = CalculateTotalBalance(initialLedgers);
 
         Console.WriteLine("Starting NBomber load test...");
-        var httpScenario = CreateHttpScenario();
         var bookingScenario = CreateBookingScenario(jwt);
 
         NBomberRunner
-            .RegisterScenarios(httpScenario, bookingScenario)
+            .RegisterScenarios(bookingScenario)
             .WithReportFileName("reports")
             .WithReportFolder("reports")
             .WithReportFormats(ReportFormat.Html)
@@ -70,23 +69,6 @@ class Program
         }
     }
 
-    static ScenarioProps CreateHttpScenario()
-    {
-        return Scenario.Create("http_scenario", async context =>
-            {
-                using var httpClient = new HttpClient();
-                var request = Http.CreateRequest("GET", "http://localhost:5000/api/v1/lbankinfo")
-                    .WithHeader("Accept", "application/json");
-
-                var response = await Http.Send(httpClient, request);
-                return response;
-            })
-            .WithoutWarmUp()
-            .WithLoadSimulations(
-                Simulation.Inject(rate: 100, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(30))
-            );
-    }
-
     private static ScenarioProps CreateBookingScenario(string? jwt)
     {
         return Scenario.Create("booking_scenario", async context =>
@@ -94,8 +76,8 @@ class Program
                 using var httpClient = new HttpClient();
                 var booking = new
                 {
-                    SourceId = 1,
-                    DestinationId = 2,
+                    SourceId = 2,
+                    DestinationId = 1,
                     Amount = 1
                 };
 
@@ -110,8 +92,9 @@ class Program
                 return response;
             })
             .WithoutWarmUp()
-            .WithLoadSimulations(Simulation.Inject(rate: 10, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(60)));
-
+            .WithLoadSimulations(
+                Simulation.Inject(rate: 50, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(60))
+            );
     }
 
     static async Task<string?> Login(HttpClient httpClient, string username, string password)

@@ -10,25 +10,13 @@ public static class DatabaseUtil
 
     public static int ComputeExponentialBackoff(int retries)
     {
-        var baseDelay = (int)(Math.Pow(2, retries) * 100);
-
         var jitter = RandomGenerator.Next(-50, 50);
-
-        return baseDelay + jitter;
+        return (int)(Math.Pow(2, retries) * 100 + jitter);
     }
 
     public static bool IsDeadlock(DbUpdateConcurrencyException ex)
     {
         var innerException = ex.InnerException as SqlException;
         return innerException is { Number: 1205 };
-    }
-
-    public static async Task RollbackAndDisposeTransactionAsync(IDbContextTransaction? transaction,
-        CancellationToken ct)
-    {
-        if (transaction == null) return;
-
-        await transaction.RollbackAsync(ct);
-        await transaction.DisposeAsync();
     }
 }

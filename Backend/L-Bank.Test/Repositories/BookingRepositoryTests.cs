@@ -1,69 +1,83 @@
 ﻿using L_Bank_W_Backend.Core.Models;
+using L_Bank_W_Backend.DbAccess;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Repositories;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
-public class BookingRepositoryTests : IDisposable
+public class BookingRepositoryTests
 {
-    private readonly Mock<ILogger<BookingRepository>> _loggerMock = new();
-    private readonly AppDbContext _context;
-    private readonly SqliteConnection _connection;
+    private readonly Mock<ILogger<BookingRepository>> _loggerMock;
 
     public BookingRepositoryTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
+        Mock<IOptions<DatabaseSettings>> databaseSettingsMock = new();
+        databaseSettingsMock.Setup(x => x.Value).Returns(new DatabaseSettings
+        {
+            ConnectionString =
+                "Server=localhost,1433;Database=l_bank_backend;User Id=sa;Password=YourPassword123;TrustServerCertificate=True;"
+        });
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new AppDbContext(options);
-        _context.Database.EnsureCreated();
-    }
-
-    public void Dispose()
-    {
-        _context.Dispose();
-        _connection.Close();
-        _connection.Dispose();
-    }
-
-    private BookingRepository CreateTestee()
-    {
-        return new BookingRepository(_context, _loggerMock.Object);
+        _loggerMock = new Mock<ILogger<BookingRepository>>();
     }
 
     [Fact]
     public async Task Book_WithValidLedgers_TransfersFundsAndReturnsTrue()
     {
         // Arrange
-        const int sourceLedgerId = 1;
-        const int destinationLedgerId = 2;
+        var connectionString =
+            "Server=localhost,1433;Database=l_bank_backend;User Id=sa;Password=YourPassword123;TrustServerCertificate=True;";
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlServer(connectionString)
+            .Options;
+
+        // Ensure the database is created
+        await using (var context = new AppDbContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
+
         const decimal transferAmount = 50m;
+        int sourceLedgerId;
+        int destinationLedgerId;
 
-        _context.Ledgers.AddRange(
-            new Ledger { Id = sourceLedgerId, Balance = 100m },
-            new Ledger { Id = destinationLedgerId, Balance = 100m }
-        );
-        await _context.SaveChangesAsync();
+        await using (var context = new AppDbContext(options))
+        {
+            var sourceLedger = new Ledger { Balance = 100m };
+            var destinationLedger = new Ledger { Balance = 100m };
 
-        var repository = CreateTestee();
+            context.Ledgers.AddRange(sourceLedger, destinationLedger);
+            await context.SaveChangesAsync();
+
+            sourceLedgerId = sourceLedger.Id;
+            destinationLedgerId = destinationLedger.Id;
+        }
 
         // Act
-        var result = await repository.Book(sourceLedgerId, destinationLedgerId, transferAmount, CancellationToken.None);
-        var sourceLedger = await _context.Ledgers.FindAsync(sourceLedgerId);
-        var destinationLedger = await _context.Ledgers.FindAsync(destinationLedgerId);
+        bool result;
+        await using (var context = new AppDbContext(options))
+        {
+            var repository = new BookingRepository(context, _loggerMock.Object);
+            result = await repository.Book(sourceLedgerId, destinationLedgerId, transferAmount,
+                CancellationToken.None);
+        }
 
         // Assert
-        Assert.True(result);
-        Assert.NotNull(sourceLedger);
-        Assert.NotNull(destinationLedger);
-        Assert.Equal(50m, sourceLedger.Balance);
-        Assert.Equal(150m, destinationLedger.Balance);
+        await using (var context = new AppDbContext(options))
+        {
+            // Retrieve the ledgers to confirm the balances have been updated
+            var sourceLedger = await context.Ledgers.FindAsync(sourceLedgerId);
+            var destinationLedger = await context.Ledgers.FindAsync(destinationLedgerId);
+
+            Assert.True(result);
+            Assert.NotNull(sourceLedger);
+            Assert.NotNull(destinationLedger);
+            Assert.Equal(50m, sourceLedger.Balance);
+            Assert.Equal(150m,
+                destinationLedger.Balance);
+        }
     }
 
     [Fact]
@@ -74,10 +88,27 @@ public class BookingRepositoryTests : IDisposable
         const int destinationLedgerId = 2;
         const decimal transferAmount = 50m;
 
-        var repository = CreateTestee();
+        // Arrange
+        var connectionString =
+            "Server=localhost,1433;Database=l_bank_backend;User Id=sa;Password=YourPassword123;TrustServerCertificate=True;";
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlServer(connectionString)
+            .Options;
+
+        // Ensure the database is created
+        await using (var context = new AppDbContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
 
         // Act
-        var result = await repository.Book(nonExistingLedgerId, destinationLedgerId, transferAmount, CancellationToken.None);
+        bool result;
+        await using (var context = new AppDbContext(options))
+        {
+            var repository = new BookingRepository(context, _loggerMock.Object);
+            result = await repository.Book(nonExistingLedgerId , destinationLedgerId, transferAmount,
+                CancellationToken.None);
+        }
 
         // Assert
         Assert.False(result);
@@ -87,20 +118,45 @@ public class BookingRepositoryTests : IDisposable
     public async Task Book_WithInsufficientBalance_ReturnsFalse()
     {
         // Arrange
-        const int sourceLedgerId = 1;
-        const int destinationLedgerId = 2;
         const decimal transferAmount = 150m;
 
-        _context.Ledgers.AddRange(
-            new Ledger { Id = sourceLedgerId, Balance = 100m },
-            new Ledger { Id = destinationLedgerId, Balance = 100m }
-        );
-        await _context.SaveChangesAsync();
+        // Arrange
+        var connectionString =
+            "Server=localhost,1433;Database=l_bank_backend;User Id=sa;Password=YourPassword123;TrustServerCertificate=True;";
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlServer(connectionString)
+            .Options;
 
-        var repository = CreateTestee();
+
+        int sourceLedgerId;
+        int destinationLedgerId;
+
+        await using (var context = new AppDbContext(options))
+        {
+            var sourceLedger = new Ledger { Balance = 100m };
+            var destinationLedger = new Ledger { Balance = 100m };
+
+            context.Ledgers.AddRange(sourceLedger, destinationLedger);
+            await context.SaveChangesAsync();
+
+            sourceLedgerId = sourceLedger.Id;
+            destinationLedgerId = destinationLedger.Id;
+        }
+
+        // Ensure the database is created
+        await using (var context = new AppDbContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
 
         // Act
-        var result = await repository.Book(sourceLedgerId, destinationLedgerId, transferAmount, CancellationToken.None);
+        bool result;
+        await using (var context = new AppDbContext(options))
+        {
+            var repository = new BookingRepository(context, _loggerMock.Object);
+            result = await repository.Book(sourceLedgerId , destinationLedgerId, transferAmount,
+                CancellationToken.None);
+        }
 
         // Assert
         Assert.False(result);
