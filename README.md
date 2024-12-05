@@ -27,3 +27,6 @@ Mögliche Probleme bei einer Multiuserapplikation wären:
 
 - **Löschen eines Kontos**: Beim Löschen eines Kontos wird eine Transaktion verwendet, um sicherzustellen, dass der Löschvorgang atomar ist und bei einem Fehler zurückgerollt werden kann. Dies verhindert inkonsistente Zustände in der Datenbank. So kann ein Konto nicht gelöscht werden, wenn beispielsweise noch eine Überweisung aussteht.
 - **Erstellen eines Kontos**: Hier ist keine Transaktion nötig.
+
+## Sequenzdiagramm eines Features
+<img width="938" alt="image" src="https://github.com/user-attachments/assets/a2d63d77-4ef8-4499-a964-af49eac08195">
