@@ -6,9 +6,15 @@ namespace L_Bank_W_Backend.DbAccess.Util;
 
 public static class DatabaseUtil
 {
+    private static readonly Random RandomGenerator = new();
+
     public static int ComputeExponentialBackoff(int retries)
     {
-        return (int)(Math.Pow(2, retries) * 100);
+        var baseDelay = (int)(Math.Pow(2, retries) * 100);
+
+        var jitter = RandomGenerator.Next(-50, 50);
+
+        return baseDelay + jitter;
     }
 
     public static bool IsDeadlock(DbUpdateConcurrencyException ex)

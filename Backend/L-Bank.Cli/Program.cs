@@ -64,5 +64,3 @@ catch (Exception ex)
 }
 
 Simple.Run(ledgerRepository);
-
-// WithTransactions.Run(allLedgers, ledgerRepository);
