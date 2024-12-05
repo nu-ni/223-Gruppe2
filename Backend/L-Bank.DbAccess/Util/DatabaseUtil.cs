@@ -10,11 +10,8 @@ public static class DatabaseUtil
 
     public static int ComputeExponentialBackoff(int retries)
     {
-        var baseDelay = (int)(Math.Pow(2, retries) * 100);
-
         var jitter = RandomGenerator.Next(-50, 50);
-
-        return baseDelay + jitter;
+        return (int)(Math.Pow(2, retries) * 100 + jitter);
     }
 
     public static bool IsDeadlock(DbUpdateConcurrencyException ex)

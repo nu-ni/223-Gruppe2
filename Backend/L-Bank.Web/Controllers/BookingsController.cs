@@ -19,6 +19,11 @@ public class BookingsController(IBookingRepository bookingRepository) : Controll
     {
         try
         {
+            if (booking.SourceId == booking.DestinationId)
+            {
+                return BadRequest(new { message = "Source and destination ID can not be the same." });
+            }
+
             var success = await bookingRepository.Book(booking.SourceId, booking.DestinationId, booking.Amount,
                 new CancellationToken());
             return success
