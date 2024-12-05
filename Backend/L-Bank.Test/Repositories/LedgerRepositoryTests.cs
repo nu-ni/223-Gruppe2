@@ -2,6 +2,7 @@
 using L_Bank_W_Backend.DbAccess;
 using L_Bank_W_Backend.DbAccess.Data;
 using L_Bank_W_Backend.DbAccess.Repositories;
+using L_Bank_W_Backend.DbAccess.Util;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ public class LedgerRepositoryTests : IDisposable
 {
     private readonly Mock<IOptions<DatabaseSettings>> _databaseSettingsMock = new();
     private readonly Mock<ILogger<LedgerRepository>> _loggerMock = new();
+    private readonly Mock<CustomTransactionManager> _transactionManagerMock = new();
     private readonly AppDbContext _context;
     private readonly SqliteConnection _connection;
 
@@ -37,7 +39,7 @@ public class LedgerRepositoryTests : IDisposable
 
     private LedgerRepository CreateTestee()
     {
-        return new LedgerRepository(_databaseSettingsMock.Object, _context, _loggerMock.Object);
+        return new LedgerRepository(_databaseSettingsMock.Object, _context, _transactionManagerMock.Object, _loggerMock.Object);
     }
 
     [Fact]

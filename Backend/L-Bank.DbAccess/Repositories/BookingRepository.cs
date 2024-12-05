@@ -1,9 +1,7 @@
-﻿using System.Transactions;
-using L_Bank_W_Backend.DbAccess.Data;
-using L_Bank_W_Backend.DbAccess.Util;
+﻿using L_Bank_W_Backend.DbAccess.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using TransactionManager = L_Bank_W_Backend.DbAccess.Util.TransactionManager;
 
 namespace L_Bank_W_Backend.DbAccess.Repositories;
 
@@ -11,50 +9,45 @@ public class BookingRepository(AppDbContext context, ILogger<BookingRepository> 
 {
     public async Task<bool> Book(int sourceLedgerId, int destinationLedgerId, decimal amount, CancellationToken ct)
     {
+        var sql = @"
+        BEGIN TRANSACTION;
+
+        DECLARE @SourceBalance DECIMAL(19,4);
+        DECLARE @DestinationBalance DECIMAL(19,4);
+
+        SELECT @SourceBalance = Balance FROM Ledgers WHERE Id = @sourceId;
+        SELECT @DestinationBalance = Balance FROM Ledgers WHERE Id = @destinationId;
+
+        IF @SourceBalance >= @Amount
+        BEGIN
+            UPDATE Ledgers SET Balance = Balance - @Amount WHERE Id = @sourceId;
+            UPDATE Ledgers SET Balance = Balance + @Amount WHERE Id = @destinationId;
+
+            COMMIT TRANSACTION;
+            SELECT CAST(1 AS BIT); -- True for success
+        END
+        ELSE
+        BEGIN
+            ROLLBACK TRANSACTION;
+            SELECT CAST(0 AS BIT); -- False for insufficient funds
+        END";
+
+        var parameters = new[]
+        {
+            new SqlParameter("@sourceId", sourceLedgerId),
+            new SqlParameter("@destinationId", destinationLedgerId),
+            new SqlParameter("@Amount", amount)
+        };
+
         try
         {
-            var transactionManager = new TransactionManager(context);
-
-            return await transactionManager.ExecuteTransactionAsync(
-                async (ctx, token) => await ExecuteBookingTransactionAsync(ctx, sourceLedgerId, destinationLedgerId, amount, token),
-                ct);
-        }
-        catch (DbUpdateConcurrencyException ex) when (DatabaseUtil.IsDeadlock(ex))
-        {
-            logger.LogError(ex, "A deadlock occurred during the booking operation.");
+            var result = await context.Database.ExecuteSqlRawAsync(sql, parameters, ct);
+            return result == 2;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An exception occurred during the booking operation.");
+            logger.LogWarning(ex, "Booking transaction failed");
+            throw;
         }
-
-        return false;
-    }
-
-    private static async Task<bool> ExecuteBookingTransactionAsync(
-        AppDbContext ctx,
-        int sourceLedgerId,
-        int destinationLedgerId,
-        decimal amount,
-        CancellationToken ct)
-    {
-        var sourceLedger = await ctx.Ledgers.FindAsync([sourceLedgerId], ct);
-        var destinationLedger = await ctx.Ledgers.FindAsync([destinationLedgerId], ct);
-
-        if (sourceLedger == null || destinationLedger == null)
-        {
-            throw new InvalidOperationException("Ledger not found.");
-        }
-
-        if (sourceLedger.Balance < amount)
-        {
-            throw new InvalidOperationException("Insufficient balance.");
-        }
-
-        sourceLedger.Balance -= amount;
-        destinationLedger.Balance += amount;
-
-        await ctx.SaveChangesAsync(ct);
-        return true;
     }
 }

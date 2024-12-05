@@ -12,11 +12,12 @@ namespace L_Bank_W_Backend.DbAccess.Repositories;
 public class LedgerRepository(
     IOptions<DatabaseSettings> databaseSettings,
     AppDbContext context,
+    CustomTransactionManager transactionManager,
     ILogger<LedgerRepository> logger)
     : ILedgerRepository
 {
+    private readonly CustomTransactionManager _transactionManager = transactionManager;
     private const int MaxRetries = 10;
-
     private readonly DatabaseSettings _databaseSettings = databaseSettings.Value;
 
     public decimal GetTotalMoney()
@@ -36,49 +37,33 @@ public class LedgerRepository(
         return totalBalance;
     }
 
-    public async Task<IEnumerable<Ledger>> GetAllLedgers(CancellationToken ct)
+public async Task<IEnumerable<Ledger>> GetAllLedgers(CancellationToken ct)
+{
+    return await _transactionManager.ExecuteTransactionAsync(async (ctx, cancellationToken) =>
     {
-        var transactionManager = new TransactionManager(context);
-        return await transactionManager.ExecuteTransactionAsync(GetLedgersTransactionAsync, ct);
-    }
-
-    private static async Task<IEnumerable<Ledger>> GetLedgersTransactionAsync(AppDbContext context,
-        CancellationToken ct)
-    {
-        return await context.Ledgers
+        return await ctx.Ledgers
             .AsNoTracking()
             .OrderBy(ledger => ledger.Name)
-            .ToListAsync(ct);
-    }
+            .ToListAsync(cancellationToken);
+    }, ct);
+}
 
-    public async Task<bool> DeleteLedger(int id, CancellationToken ct)
+   public async Task<bool> DeleteLedger(int id, CancellationToken ct)
     {
-        var transactionManager = new TransactionManager(context);
-        var result = await transactionManager.ExecuteTransactionAsync<bool>(
-            async (ctx, token) =>
-            {
-                var ledgerToDelete = await ctx.Ledgers.FindAsync(new object[] { id }, token);
-
-                if (ledgerToDelete == null)
-                {
-                    logger.LogInformation("Ledger with id {Id} not found.", id);
-                    return false;
-                }
-
-                ctx.Ledgers.Remove(ledgerToDelete);
-                await ctx.SaveChangesAsync(token);
-
-                return true;
-            },
-            ct
-        );
-
-        if (!result)
+        return await _transactionManager.ExecuteTransactionAsync(async (ctx, token) =>
         {
-            logger.LogWarning("Could not delete the ledger with id {Id}.", id);
-        }
+            var ledgerToDelete = await ctx.Ledgers.FindAsync([id], token);
+            if (ledgerToDelete == null)
+            {
+                logger.LogInformation("Ledger with id {Id} not found.", id);
+                return false;
+            }
 
-        return result;
+            ctx.Ledgers.Remove(ledgerToDelete);
+            await ctx.SaveChangesAsync(token);
+
+            return true;
+        }, ct);
     }
 
     public async Task<Ledger?> SelectOneAsync(int id, CancellationToken ct = default)

@@ -19,13 +19,4 @@ public static class DatabaseUtil
         var innerException = ex.InnerException as SqlException;
         return innerException is { Number: 1205 };
     }
-
-    public static async Task RollbackAndDisposeTransactionAsync(IDbContextTransaction? transaction,
-        CancellationToken ct)
-    {
-        if (transaction == null) return;
-
-        await transaction.RollbackAsync(ct);
-        await transaction.DisposeAsync();
-    }
 }
