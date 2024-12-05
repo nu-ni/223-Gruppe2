@@ -1,5 +1,5 @@
-﻿using L_Bank_W_Backend.DbAccess.Data;
-using Microsoft.Data.SqlClient;
+﻿using System.Data.Common;
+using L_Bank_W_Backend.DbAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -34,9 +34,9 @@ public class BookingRepository(AppDbContext context, ILogger<BookingRepository> 
 
         var parameters = new[]
         {
-            new SqlParameter("@sourceId", sourceLedgerId),
-            new SqlParameter("@destinationId", destinationLedgerId),
-            new SqlParameter("@Amount", amount)
+            context.Database.GetDbConnection().CreateParameter("@sourceId", sourceLedgerId),
+            context.Database.GetDbConnection().CreateParameter("@destinationId", destinationLedgerId),
+            context.Database.GetDbConnection().CreateParameter("@Amount", amount)
         };
 
         try
@@ -49,5 +49,16 @@ public class BookingRepository(AppDbContext context, ILogger<BookingRepository> 
             logger.LogWarning(ex, "Booking transaction failed");
             throw;
         }
+    }
+}
+
+public static class DbConnectionExtensions
+{
+    public static DbParameter CreateParameter(this DbConnection conn, string name, object value)
+    {
+        var parameter = conn.CreateCommand().CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Value = value;
+        return parameter;
     }
 }

@@ -6,7 +6,7 @@ namespace L_Bank_W_Backend.DbAccess.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<Ledger> Ledgers { get; set; }
+    public virtual DbSet<Ledger> Ledgers { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Booking> Bookings { get; set; }
 
